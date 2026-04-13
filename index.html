@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescueDoc Pro | Digitales Einsatzprotokoll</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --emergency-red: #d32f2f;
+            --emergency-blue: #1976d2;
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --text-light: #e0e0e0;
+            --warning-amber: #ffab00;
+            --success-green: #2e7d32;
+            --input-border: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* --- Layout Structure --- */
+        .nida-container {
+            display: grid;
+            grid-template-columns: 100px 1fr 300px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar Navigation (Sektoren) --- */
+        nav.sectors {
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #333;
+        }
+
+        .sector-btn {
+            padding: 20px 0;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 1px solid #222;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+        .sector-btn i { font-size: 1.5rem; display: block; margin-bottom: 5px; }
+        .sector-btn.active { color: var(--emergency-blue); background: #111; border-left: 4px solid var(--emergency-blue); }
+        .sector-btn.critical { color: var(--emergency-red); }
+
+        /* --- Main Content --- */
+        main {
+            padding: 20px;
+            overflow-y: auto;
+            background: #151515;
+        }
+
+        .section-title {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--emergency-blue);
+            border-bottom: 2px solid var(--emergency-blue);
+            padding-bottom: 5px;
+        }
+
+        /* --- Grid & Form Elements --- */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .field-box {
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--input-border);
+        }
+
+        label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+        input, select, textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+        }
+        textarea { height: 80px; resize: none; }
+
+        /* --- Vitals / Monitor --- */
+        .vital-input { font-size: 1.8rem; font-weight: bold; color: var(--success-green); width: 80px; }
+        .alert-active { border: 2px solid var(--emergency-red) !important; background: rgba(211, 47, 47, 0.1); }
+
+        /* --- Sidebar Right: Live Protocol --- */
+        aside.summary {
+            background: #000;
+            padding: 15px;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .protocol-preview {
+            flex: 1;
+            font-size: 0.85rem;
+            color: #aaa;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #222;
+            padding: 10px;
+            background: #080808;
+            margin-bottom: 15px;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .btn-blue { background: var(--emergency-blue); color: white; }
+        .btn-red { background: var(--emergency-red); color: white; }
+
+        /* --- Warnings Panel --- */
+        #warnings-panel {
+            background: #2a1111;
+            border: 1px solid var(--emergency-red);
+            padding: 10px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .warning-item { color: #ff8a80; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; }
+
+        /* Mobile */
+        @media (max-width: 800px) {
+            .nida-container { grid-template-columns: 60px 1fr; }
+            aside.summary { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="nida-container">
+    <!-- NAVIGATION SEKTORS -->
+    <nav class="sectors">
+        <div class="sector-btn active" onclick="showSector('general')"><i class="fas fa-file-medical"></i>Einsatz</div>
+        <div class="sector-btn" onclick="showSector('patient')"><i class="fas fa-user"></i>Patient</div>
+        <div class="sector-btn" onclick="showSector('vitals')"><i class="fas fa-heartbeat"></i>Vitalwerte</div>
+        <div class="sector-btn" onclick="showSector('findings')"><i class="fas fa-notes-medical"></i>Befund</div>
+        <div class="sector-btn" onclick="showSector('meds')"><i class="fas fa-pills"></i>Maßnahmen</div>
+        <div class="sector-btn critical" onclick="showSector('handover')"><i class="fas fa-ambulance"></i>Übergabe</div>
+    </nav>
+
+    <!-- MAIN FORM AREA -->
+    <main>
+        <!-- SECTOR: GENERAL DATA -->
+        <div id="sector-general" class="sector-content">
+            <h2 class="section-title">Allgemeine Einsatzdaten</h2>
+            <div class="data-grid">
+                <div class="field-box">
+                    <label>Einsatznummer</label>
+                    <input type="text" id="case-id" value="2024-RD-8821">
+                </div>
+                <div class="field-box">
+                    <label>Einsatzmittel</label>
+                    <input type="text" id="unit-id" value="01-RTW-01">
+                </div>
+                <div class="field-box">
+                    <label>Einsatzort</label>
+                    <input type="text" id="incident-loc" placeholder="Straße, Ort">
+                </div>
+                <div class="field-box">
+                    <label>Meldebild</label>
+                    <input type="text" id="call-reason" placeholder="z.B. V.a. ACS">
+                </div>
+            </div>
+            <div class="data-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="field-box"><label>Alarm</label><input type="time" id="t-alarm"></div>
+                <div class="field-box"><label>Ankunft</label><input type="time" id="t-arrival"></div>
+                <div class="field-box"><label>Abfahrt</label><input type="time" id="t-departure"></div>
+            </div>
+        </div>
+
+        <!-- SECTOR: PATIENT -->
+        <div id="sector-patient" class="sector-content" style="display:none;">
+            <h2 class="section-title">Patientendaten</h2>
+            <div class="data-grid">
+                <div class="field-box"><label>Name</label><input type="text" id="p-name" placeholder="Name, Vorname"></div>
+                <div class="field-box"><label>Geburtsdatum</label><input type="date" id="p-dob"></div>
+                <div class="field-box"><label>Geschlecht</label>
+                    <select id="p-gender">
+                        <option>Männlich</option>
+                        <option>Weiblich</option>
+                        <option>Divers</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-box"><label>Anschrift / Versicherung</label><textarea id="p-insurance"></textarea></div>
+        </div>
+
+        <!-- SECTOR: VITALS -->
+        <div id="sector-vitals" class="sector-content" style="display:none;">
+            <h2 class="section-title">Vitalparameter Monitoring</h2>
+            <div class="data-grid">
+                <div class="field-box" id="box-bp">
+                    <label>Blutdruck (mmHg)</label>
+                    <div style="display:flex; align-items:center;">
+                        <input type="number" id="v-sys" class="vital-input" placeholder="SYS" onchange="checkVitals()">
+                        <span>/</span>
+                        <input type="number" id="v-dia" class="vital-input" placeholder="DIA">
+                    </div>
+                </div>
+                <div class="field-box" id="box-hr">
+                    <label>Herzfrequenz (bpm)</label>
+                    <input type="number" id="v-hr" class="vital-input" placeholder="80" onchange="checkVitals()">
+                </div>
+                <div class="field-box" id="box-spo2">
+                    <label>SpO2 (%)</label>
+                    <input type="number" id="v-spo2" class="vital-input" placeholder="98" onchange="checkVitals()">
+                </div>
+                <div class="field-box">
+                    <label>GCS</label>
+                    <input type="number" id="v-gcs" class="vital-input" value="15" min="3" max="15">
+                </div>
+            </div>
+            <div id="warnings-panel">
+                <!-- Diagnostische Warnungen erscheinen hier -->
+            </div>
+        </div>
+
+        <!-- SECTOR: FINDINGS (SAMPLER) -->
+        <div id="sector-findings" class="sector-content" style="display:none;">
+            <h2 class="section-title">Befund & Anamnese (SAMPLER)</h2>
+            <div class="data-grid">
+                <div class="field-box"><label>S (Symptome)</label><textarea id="s-symptoms"></textarea></div>
+                <div class="field-box"><label>A (Allergien)</label><textarea id="s-allergies"></textarea></div>
+                <div class="field-box"><label>M (Medikation)</label><textarea id="s-meds"></textarea></div>
+                <div class="field-box"><label>P (Patientengeschichte)</label><textarea id="s-past"></textarea></div>
+            </div>
+        </div>
+
+        <!-- SECTOR: HANDOVER -->
+        <div id="sector-handover" class="sector-content" style="display:none;">
+            <h2 class="section-title">Übergabeprotokoll (ISOBAR/SBAR)</h2>
+            <div class="field-box" style="margin-bottom:20px;">
+                <label>Vorbereitete Übergabe-Notiz</label>
+                <div id="generated-handover-text" style="background:#000; padding:15px; font-family:monospace; color:var(--success-green);">
+                    Warten auf Daten...
+                </div>
+            </div>
+            <button class="btn-full btn-blue" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> Protokoll Finalisieren & PDF Download</button>
+        </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: LIVE PREVIEW -->
+    <aside class="summary">
+        <h3 style="margin-bottom:10px; font-size:0.9rem;">LIVE PROTOKOLL</h3>
+        <div id="protocol-preview" class="protocol-preview">Keine Daten vorhanden.</div>
+        
+        <button class="btn-full btn-red" onclick="resetForm()"><i class="fas fa-trash"></i> Einsatz Löschen</button>
+        <div style="font-size: 0.7rem; color: #444; text-align: center;">V 1.0.4 - System Online</div>
+    </aside>
+</div>
+
+<script>
+    /**
+     * APP LOGIC
+     */
+
+    // Sektoren-Umschaltung
+    function showSector(sectorId) {
+        document.querySelectorAll('.sector-content').forEach(s => s.style.display = 'none');
+        document.getElementById('sector-' + sectorId).style.display = 'block';
+        
+        document.querySelectorAll('.sector-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        if(sectorId === 'handover') generateHandoverText();
+    }
+
+    // Automatische Vitalwert-Analyse & Warnungen
+    function checkVitals() {
+        const sys = parseInt(document.getElementById('v-sys').value);
+        const hr = parseInt(document.getElementById('v-hr').value);
+        const spo2 = parseInt(document.getElementById('v-spo2').value);
+        
+        const warnings = [];
+        const panel = document.getElementById('warnings-panel');
+        panel.innerHTML = '';
+
+        // Logik für Hypotonie / Hypertonie
+        if(sys < 90) {
+            warnings.push("⚠️ KRITISCHE HYPOTONIE");
+            document.getElementById('box-bp').classList.add('alert-active');
+        } else if(sys > 180) {
+            warnings.push("⚠️ HYPERTONIE GRAD 3");
+            document.getElementById('box-bp').classList.add('alert-active');
+        } else {
+            document.getElementById('box-bp').classList.remove('alert-active');
+        }
+
+        // Logik für Herzfrequenz
+        if(hr < 50) warnings.push("⚠️ BRADYKARDIE");
+        if(hr > 120) warnings.push("⚠️ TACHYKARDIE");
+
+        // Logik für SpO2
+        if(spo2 < 92) {
+            warnings.push("⚠️ RESPIRATORISCHE INSUFFIZIENZ / HYPOXIE");
+            document.getElementById('box-spo2').classList.add('alert-active');
+        } else {
+            document.getElementById('box-spo2').classList.remove('alert-active');
+        }
+
+        if(warnings.length > 0) {
+            panel.style.display = 'block';
+            warnings.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'warning-item';
+                div.innerText = w;
+                panel.appendChild(div);
+            });
+        } else {
+            panel.style.display = 'none';
+        }
+
+        updateLivePreview();
+    }
+
+    // Live-Vorschau Text-Generierung
+    function updateLivePreview() {
+        const name = document.getElementById('p-name').value || "Unbekannt";
+        const sys = document.getElementById('v-sys').value || "--";
+        const dia = document.getElementById('v-dia').value || "--";
+        const hr = document.getElementById('v-hr').value || "--";
+        const spo2 = document.getElementById('v-spo2').value || "--";
+
+        const preview = `PATIENT: ${name}\nVITALWERTE:\n- RR: ${sys}/${dia} mmHg\n- HF: ${hr} bpm\n- SpO2: ${spo2}%\n\nDIAGNOSEN / WARNUNGEN:\n${Array.from(document.querySelectorAll('.warning-item')).map(i => i.innerText).join('\n') || 'Keine kritischen Alarme'}`;
+        
+        document.getElementById('protocol-preview').innerText = preview;
+    }
+
+    // Professionelles Übergabe-Protokoll (SBAR Schema)
+    function generateHandoverText() {
+        const name = document.getElementById('p-name').value || "Patient";
+        const sys = document.getElementById('v-sys').value || "?";
+        const hr = document.getElementById('v-hr').value || "?";
+        const symptoms = document.getElementById('s-symptoms').value || "Keine Angabe";
+        
+        const text = `ÜBERGABE:\nWir übergeben ${name}. \nSituation: Akute Symptomatik: ${symptoms}. \nVital stabil bei RR ${sys} mmHg und HF ${hr}. \nBisherige Maßnahmen: Monitoring erfolgt.`;
+        
+        document.getElementById('generated-handover-text').innerText = text;
+    }
+
+    // PDF Export
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(20);
+        doc.text("RescueDoc Pro - Notfallprotokoll", 10, 20);
+        doc.setFontSize(12);
+        doc.text(`Einsatz: ${document.getElementById('case-id').value}`, 10, 35);
+        doc.text(`Einheit: ${document.getElementById('unit-id').value}`, 10, 42);
+        
+        doc.text("--------------------------------------------------", 10, 50);
+        doc.text(`Patient: ${document.getElementById('p-name').value}`, 10, 60);
+        doc.text(`Befund: ${document.getElementById('s-symptoms').value}`, 10, 70);
+        doc.text(`Vitalwerte: BP ${document.getElementById('v-sys').value}/${document.getElementById('v-dia').value}, HF ${document.getElementById('v-hr').value}`, 10, 80);
+        
+        doc.save("Einsatzprotokoll.pdf");
+    }
+
+    function resetForm() {
+        if(confirm("Alle Daten löschen?")) location.reload();
+    }
+
+    // Init Live Preview
+    setInterval(updateLivePreview, 2000);
+</script>
+
+</body>
+</html>
