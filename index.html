@@ -2,467 +2,559 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RescuePad Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIDAPad - Roleplay EMS</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
         :root {
-            --medical-blue: #0ea5e9;
-            --medical-dark: #0f172a;
-            --medical-card: #1e293b;
+            --primary-color: #d32f2f; /* Standard Rescue Tape Rot */
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --text-color: #f5f5f5;
+            --border-color: #444;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--medical-dark);
-            color: #f8fafc;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; }
+        
+        /* Login Screen */
+        #login-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: var(--bg-color); }
+        .login-box { background: var(--panel-bg); padding: 30px; border-radius: 10px; border-top: 5px solid var(--primary-color); width: 300px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .login-box input { width: 90%; padding: 10px; margin: 10px 0; background: #222; border: 1px solid var(--border-color); color: white; }
+        button { background-color: var(--primary-color); color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; font-weight: bold; width: 100%; transition: opacity 0.2s;}
+        button:hover { opacity: 0.8; }
 
-        .tab-content { display: none; animation: fadeIn 0.3s ease-out; }
+        /* Main App Header */
+        #app-screen { display: none; height: 100vh; flex-direction: column; }
+        .header { background: var(--panel-bg); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-color); }
+        .header-info { display: flex; gap: 20px; font-size: 1.1em; }
+        
+        /* Tabs (Fenster) */
+        .tabs { display: flex; background: #222; border-bottom: 1px solid var(--border-color); }
+        .tab { padding: 12px 20px; cursor: pointer; background: #222; border-right: 1px solid var(--border-color); transition: 0.3s;}
+        .tab.active { background: var(--primary-color); color: white; font-weight: bold; }
+        
+        .tab-content { display: none; padding: 20px; flex-grow: 1; overflow-y: auto; }
         .tab-content.active { display: block; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* Sub-Tabs (Einsatzbericht) */
+        .sub-tabs { display: flex; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+        .sub-tab { padding: 8px 15px; cursor: pointer; margin-right: 5px; background: var(--panel-bg); border-radius: 5px 5px 0 0; }
+        .sub-tab.active { background: #444; border-bottom: 3px solid var(--primary-color); }
+        .sub-content { display: none; background: var(--panel-bg); padding: 20px; border-radius: 0 5px 5px 5px; }
+        .sub-content.active { display: block; }
 
-        .glass-card {
-            background: var(--medical-card);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-        }
-
-        .nav-button.active {
-            background-color: var(--medical-blue);
-            color: white;
-            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
-        }
-
-        input, textarea, select {
-            background: #334155 !important;
-            border: 1px solid #475569 !important;
-            color: white !important;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-        }
-
-        .gcs-btn.active {
-            background-color: var(--medical-blue);
-            border-color: white;
-        }
+        /* FMS & Zeiten */
+        .fms-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .fms-btn { background: #333; padding: 15px; text-align: center; border-radius: 5px; cursor: pointer; border: 1px solid #555; }
+        .fms-btn:active { background: var(--primary-color); }
+        .fms-btn input { width: 100%; background: transparent; border: none; color: var(--primary-color); font-weight: bold; text-align: center; font-size: 1.2em; cursor: pointer; }
+        
+        /* Formulare */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; background: #111; color: white; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;}
+        textarea { height: 80px; resize: vertical; }
+        
+        /* Warnungen (Vitalwerte) */
+        .warning { color: #ff5252; font-weight: bold; margin-left: 10px; display: none; }
+        
+        /* XABCDE Flexbox */
+        .row-flex { display: flex; gap: 10px; align-items: center; margin-bottom: 10px;}
+        .flex-1 { flex: 1; }
+        
+        /* KI Assistent & Chat */
+        #ai-chat { background: #111; height: 300px; padding: 10px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border-color); }
+        .msg-user { color: #82b1ff; margin-bottom: 5px;}
+        .msg-ai { color: #b9f6ca; margin-bottom: 15px;}
+        
+        /* SOP Iframes */
+        iframe { width: 100%; height: 60vh; border: none; border-radius: 5px;}
+        .sop-links a { display: inline-block; padding: 10px; background: #333; margin: 5px; color: white; text-decoration: none; border-radius: 4px; }
+        .sop-links a:hover { background: var(--primary-color); }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body>
 
-    <!-- HEADER / NAVIGATION -->
-    <header class="sticky top-0 z-50 bg-slate-900 border-b border-slate-700 p-4 shadow-xl">
-        <div class="flex justify-between items-center max-w-7xl mx-auto">
-            <div class="flex items-center gap-3">
-                <i data-lucide="shield-plus" class="text-sky-500 w-8 h-8"></i>
-                <h1 class="text-xl font-bold tracking-tight">RescuePad <span class="text-sky-500">PRO</span></h1>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>NIDA Pad OS</h2>
+            <input type="text" id="login-name" placeholder="Rettungskraft (Name)">
+            <input type="text" id="login-veh" placeholder="Fahrzeug (z.B. 1/83-1)">
+            <button onclick="login()">System starten</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="app-screen">
+        <div class="header">
+            <div class="header-info">
+                <div>Besatzung: <strong id="lbl-name">---</strong></div>
+                <div>Fahrzeug: <strong id="lbl-veh">---</strong></div>
             </div>
-            <div class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                <span id="current-time">12:00</span> | <span id="connection-status">Online</span>
+            <div>
+                <span id="clock" style="font-size: 1.2em; font-weight: bold;">00:00</span>
+                <button onclick="saveLocal()" style="margin-left:15px; width:auto; background:#4CAF50;">Speichern</button>
+                <button onclick="syncSQL()" style="margin-left:5px; width:auto; background:#2196F3;">SQL Sync</button>
             </div>
         </div>
-        
-        <!-- Tab Bar -->
-        <nav class="flex overflow-x-auto no-scrollbar gap-2 mt-4 max-w-7xl mx-auto">
-            <button onclick="showTab('bericht')" class="nav-button active px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="clipboard-list" class="w-4 h-4"></i> Einsatzbericht
-            </button>
-            <button onclick="showTab('protokoll')" class="nav-button px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="file-text" class="w-4 h-4"></i> Übergabe
-            </button>
-            <button onclick="showTab('ki')" class="nav-button px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="bot" class="w-4 h-4"></i> KI-Assistent
-            </button>
-            <button onclick="showTab('vitals')" class="nav-button px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="activity" class="w-4 h-4"></i> Vitalwerte
-            </button>
-            <button onclick="showTab('gcs')" class="nav-button px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="brain" class="w-4 h-4"></i> GCS
-            </button>
-            <button onclick="showTab('schemata')" class="nav-button px-4 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition-all">
-                <i data-lucide="book-open" class="w-4 h-4"></i> Schemata
-            </button>
-        </nav>
-    </header>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-6">
+        <!-- Haupt-Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('tab-einsatz')">Einsatzbericht</div>
+            <div class="tab" onclick="switchTab('tab-ki')">KI-Assistent</div>
+            <div class="tab" onclick="switchTab('tab-sop')">SOPs / Algorithmen</div>
+            <div class="tab" onclick="switchTab('tab-settings')">Einstellungen</div>
+        </div>
 
-        <!-- MODUL: EINSATZBERICHT -->
-        <section id="bericht" class="tab-content active space-y-6">
-            <div class="glass-card p-6">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="user"></i> Patientendaten</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input type="text" id="p-name" placeholder="Name, Vorname" class="w-full">
-                    <input type="number" id="p-age" placeholder="Alter" class="w-full">
-                    <select id="p-gender" class="w-full">
-                        <option value="">Geschlecht</option>
-                        <option value="m">Männlich</option>
-                        <option value="w">Weiblich</option>
-                        <option value="d">Divers</option>
+        <!-- TAB: EINSATZBERICHT -->
+        <div id="tab-einsatz" class="tab-content active">
+            
+            <!-- Unter-Tabs -->
+            <div class="sub-tabs">
+                <div class="sub-tab active" onclick="switchSubTab('sub-zeiten')">1. Zeiten & Einsatz</div>
+                <div class="sub-tab" onclick="switchSubTab('sub-patient')">2. XABCDE & Vitalwerte</div>
+                <div class="sub-tab" onclick="switchSubTab('sub-anamnese')">3. Anamnese</div>
+                <div class="sub-tab" onclick="switchSubTab('sub-diagnose')">4. Diagnose & Übergabe</div>
+            </div>
+
+            <!-- SUB: ZEITEN (FMS) -->
+            <div id="sub-zeiten" class="sub-content active">
+                <h3>FMS Status (Klicken für Auto-Zeit)</h3>
+                <div class="fms-grid">
+                    <div class="fms-btn" onclick="setTime('fms1')">1 Frei<br><input type="time" id="fms1"></div>
+                    <div class="fms-btn" onclick="setTime('fms2')">2 Wache<br><input type="time" id="fms2"></div>
+                    <div class="fms-btn" onclick="setTime('fms3')">3 Anfahrt<br><input type="time" id="fms3"></div>
+                    <div class="fms-btn" onclick="setTime('fms4')">4 Am Ort<br><input type="time" id="fms4"></div>
+                    <div class="fms-btn" onclick="setTime('fms5')">5 Sprechwunsch<br><input type="time" id="fms5"></div>
+                    <div class="fms-btn" onclick="setTime('fms6')">6 Defekt<br><input type="time" id="fms6"></div>
+                    <div class="fms-btn" onclick="setTime('fms7')">7 Transport<br><input type="time" id="fms7"></div>
+                    <div class="fms-btn" onclick="setTime('fms8')">8 Klinik<br><input type="time" id="fms8"></div>
+                    <div class="fms-btn" onclick="setTime('fms9')">9 Notaufnahme<br><input type="time" id="fms9"></div>
+                    <div class="fms-btn" onclick="setTime('fms0')">0 Prio/Notruf<br><input type="time" id="fms0"></div>
+                </div>
+                <div class="form-group">
+                    <label>Einsatzstichwort / Meldebild</label>
+                    <input type="text" id="meldebild">
+                </div>
+            </div>
+
+            <!-- SUB: PATIENT / XABCDE -->
+            <div id="sub-patient" class="sub-content">
+                <h3>XABCDE Schema</h3>
+                
+                <!-- X: Exsanguination -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid red;">
+                    <label>X - Starke Blutungen (Exsanguination)</label>
+                    <div class="row-flex">
+                        <select id="x-bodypart" class="flex-1">
+                            <option value="">Körperteil wählen...</option>
+                            <option value="Kopf">Kopf</option>
+                            <option value="Hals">Hals</option>
+                            <option value="Thorax">Thorax</option>
+                            <option value="Abdomen">Abdomen</option>
+                            <option value="Arm L">Arm Links</option>
+                            <option value="Arm R">Arm Rechts</option>
+                            <option value="Bein L">Bein Links</option>
+                            <option value="Bein R">Bein Rechts</option>
+                        </select>
+                        <input type="text" id="x-detail" placeholder="Art der Verletzung (z.B. Quetschung)" class="flex-1">
+                        <button style="width:auto;" onclick="addXItem()">+</button>
+                    </div>
+                    <div id="x-list" style="color: #ff8a80; font-size: 0.9em;"></div>
+                </div>
+
+                <!-- A: Airway -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid blue;">
+                    <label>A - Atemwege (Airway)</label>
+                    <select id="a-status">
+                        <option value="Frei">Frei</option>
+                        <option value="Verlegt">Verlegt</option>
+                        <option value="Gefährdet">Gefährdet</option>
                     </select>
                 </div>
+
+                <!-- B: Breathing -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid cyan;">
+                    <label>B - Beatmung (Breathing)</label>
+                    <div class="row-flex">
+                        <div class="flex-1">
+                            <label>Frequenz (/min)</label>
+                            <input type="number" id="b-freq" onkeyup="checkVitals()">
+                            <span id="warn-bfreq" class="warning">!</span>
+                        </div>
+                        <div class="flex-1">
+                            <label>Atemgeräusche</label>
+                            <select id="b-sound">
+                                <option value="Normalevesikulär">Normal (Vesikulär)</option>
+                                <option value="Giemen">Giemen (exspiratorisch)</option>
+                                <option value="Brummen">Brummen</option>
+                                <option value="Stridor">Stridor</option>
+                                <option value="Feuchte RGs">Feuchte Rasselgeräusche</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label>SpO2 (%)</label>
+                            <input type="number" id="b-spo2" onkeyup="checkVitals()">
+                            <span id="warn-spo2" class="warning">! Hypoxie</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C: Circulation -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid green;">
+                    <label>C - Kreislauf (Circulation)</label>
+                    <div class="row-flex">
+                        <div class="flex-1">
+                            <label>Puls (/min)</label>
+                            <input type="number" id="c-puls" onkeyup="checkVitals()">
+                            <span id="warn-puls" class="warning">!</span>
+                        </div>
+                        <div class="flex-1">
+                            <label>Blutdruck (Systolisch)</label>
+                            <input type="number" id="c-rrsys" onkeyup="checkVitals()">
+                            <span id="warn-rrsys" class="warning">! Hypotonie</span>
+                        </div>
+                        <div class="flex-1">
+                            <label>Blutdruck (Diastolisch)</label>
+                            <input type="number" id="c-rrdia">
+                        </div>
+                        <div class="flex-1">
+                            <label>Temperatur (°C)</label>
+                            <input type="number" step="0.1" id="c-temp" onkeyup="checkVitals()">
+                            <span id="warn-temp" class="warning">!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- D: Disability -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid orange;">
+                    <label>D - Neurologie (Disability)</label>
+                    <textarea id="d-text" placeholder="Neurologische Defizite, GCS, Pupillen..."></textarea>
+                </div>
+
+                <!-- E: Exposure -->
+                <div class="form-group" style="background:#222; padding:10px; border-left: 3px solid yellow;">
+                    <label>E - Erweitert (Exposure / Environment)</label>
+                    <textarea id="e-text" placeholder="Wärmeerhalt, Verletzungen, Umfeld..."></textarea>
+                </div>
             </div>
 
-            <div class="glass-card p-6">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="map-pin"></i> Einsatzdaten</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="e-ort" placeholder="Einsatzort">
-                    <input type="text" id="e-fzg" placeholder="Fahrzeug (z.B. RTW 1-83-1)">
-                </div>
+            <!-- SUB: ANAMNESE -->
+            <div id="sub-anamnese" class="sub-content">
+                <h3>SAMPLER / Anamnese</h3>
+                <div class="form-group"><label>S - Symptome</label><input type="text" id="samp-s"></div>
+                <div class="form-group"><label>A - Allergien</label><input type="text" id="samp-a"></div>
+                <div class="form-group"><label>M - Medikamente (Dauermedikation)</label><input type="text" id="samp-m"></div>
+                <div class="form-group"><label>P - Patientenvorgeschichte (Vorerkrankungen)</label><textarea id="samp-p"></textarea></div>
+                <div class="form-group"><label>L - Letzte Mahlzeit/Ausscheidung</label><input type="text" id="samp-l"></div>
+                <div class="form-group"><label>E - Ereignis (Was ist passiert?)</label><textarea id="samp-e"></textarea></div>
+                <div class="form-group"><label>R - Risikofaktoren</label><input type="text" id="samp-r"></div>
             </div>
 
-            <div class="glass-card p-6">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><i data-lucide="stethoscopes"></i> Medizinischer Befund</h2>
-                <textarea id="e-anamnese" placeholder="Anamnese (Was ist passiert?)" class="w-full h-24 mb-4"></textarea>
-                <textarea id="e-befund" placeholder="Körperlicher Befund / Diagnose" class="w-full h-24 mb-4"></textarea>
-                <textarea id="e-massnahmen" placeholder="Ergriffene Maßnahmen" class="w-full h-24"></textarea>
-            </div>
+            <!-- SUB: DIAGNOSE & ÜBERGABE -->
+            <div id="sub-diagnose" class="sub-content">
+                <h3>Verdachtsdiagnose</h3>
+                <div class="row-flex">
+                    <select id="diagnose-select" class="flex-1">
+                        <option value="">Auswählen...</option>
+                        <option value="Kardiovaskuläre Dysfunktion">Kardiovaskuläre Dysfunktion</option>
+                        <option value="Respiratorische Insuffizienz">Respiratorische Insuffizienz</option>
+                        <option value="Neurologisches Defizit (V.a. Apoplex)">Neurologisches Defizit (V.a. Apoplex)</option>
+                        <option value="Trauma (Polytrauma)">Trauma (Polytrauma)</option>
+                        <option value="Metabolische Entgleisung">Metabolische Entgleisung</option>
+                    </select>
+                    <button class="flex-1" style="background: #9c27b0;" onclick="generateDiagnosis()">KI Diagnose-Vorschlag holen</button>
+                </div>
+                <div class="form-group">
+                    <label>KI Hinweis (Dient nur zur Unterstützung!):</label>
+                    <input type="text" id="ai-diag-hint" readonly style="color:#ce93d8;">
+                </div>
 
-            <button onclick="convertToHandover()" class="w-full bg-sky-600 hover:bg-sky-500 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg">
-                <i data-lucide="wand-2"></i> Als Übergabeprotokoll verwenden
-            </button>
-        </section>
+                <hr style="border-color:#444; margin:20px 0;">
 
-        <!-- MODUL: ÜBERGABEPROTOKOLL -->
-        <section id="protokoll" class="tab-content space-y-6">
-            <div class="flex gap-2">
-                <button onclick="toggleHandoverMode('auto')" id="mode-auto" class="flex-1 py-2 rounded-lg bg-sky-600 font-semibold">Automatisch</button>
-                <button onclick="toggleHandoverMode('manual')" id="mode-manual" class="flex-1 py-2 rounded-lg bg-slate-700 font-semibold">KI-Geführt</button>
+                <h3>Klinik Übergabeprotokoll</h3>
+                <button style="background: #9c27b0; margin-bottom:10px;" onclick="generateHandover()">KI Übergabetext generieren</button>
+                <textarea id="uebergabe-text" style="height: 200px;" placeholder="Hier erscheint der Übergabetext für das Krankenhaus..."></textarea>
             </div>
+        </div>
 
-            <div id="handover-display" class="glass-card p-6 min-h-[300px] border-l-4 border-sky-500">
-                <div id="handover-loading" class="hidden flex flex-col items-center justify-center py-12">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mb-4"></div>
-                    <p>KI generiert Protokoll...</p>
-                </div>
-                <div id="handover-text" class="prose prose-invert max-w-none">
-                    <p class="text-slate-400 italic">Noch kein Protokoll generiert. Nutzen Sie den Button im Einsatzbericht oder den KI-Assistenten.</p>
-                </div>
+        <!-- TAB: KI ASSISTENT -->
+        <div id="tab-ki" class="tab-content">
+            <h2>KI-Rettungsdienst-Assistent</h2>
+            <p>Du kannst die KI nach Medikamenten-Dosierungen, Handlungsabläufen oder zur Interpretation von Symptomen fragen.</p>
+            <div id="ai-chat"></div>
+            <div class="row-flex">
+                <input type="text" id="ai-input" class="flex-1" placeholder="Frage die KI etwas..." onkeypress="if(event.key === 'Enter') sendChatMsg()">
+                <button style="width:auto;" onclick="sendChatMsg()">Senden</button>
             </div>
+        </div>
 
-            <div id="manual-questions" class="hidden glass-card p-6 space-y-4">
-                <p class="text-sky-400 font-semibold">Beantworten Sie die Fragen für die KI:</p>
-                <div id="ki-question-box" class="bg-slate-800 p-4 rounded-lg border border-slate-700 italic">
-                    Warten auf Start...
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="manual-input" class="flex-1" placeholder="Ihre Antwort...">
-                    <button onclick="nextManualQuestion()" class="bg-sky-600 px-4 rounded-lg"><i data-lucide="send"></i></button>
-                </div>
+        <!-- TAB: SOPs -->
+        <div id="tab-sop" class="tab-content">
+            <h2>SOPs & Algorithmen</h2>
+            <div class="sop-links">
+                <a href="https://app.sop-easy.de/algorithmen/abcde-schema" target="_blank">ABCDE-Schema öffnen</a>
+                <a href="https://app.sop-easy.de/algorithmen/befast-schema" target="_blank">BEFAST-Schema öffnen</a>
+                <a href="https://app.sop-easy.de/algorithmen/sampler-schema" target="_blank">SAMPLER-Schema öffnen</a>
+                <a href="https://app.sop-easy.de/algorithmen/opqrst-schema" target="_blank">OPQRST-Schema öffnen</a>
             </div>
+            <p style="color:#aaa;"><em>(Die Links öffnen sich in einem neuen Tab, da externe Seiten oft die Einbettung via Iframe blockieren.)</em></p>
+        </div>
 
-            <div class="flex gap-4">
-                <button onclick="exportToPDF()" class="flex-1 bg-rose-600 py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <i data-lucide="file-down"></i> PDF Export
-                </button>
-                <button onclick="copyToClipboard()" class="flex-1 bg-slate-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <i data-lucide="copy"></i> Kopieren
-                </button>
+        <!-- TAB: EINSTELLUNGEN -->
+        <div id="tab-settings" class="tab-content">
+            <h2>Pad Einstellungen</h2>
+            <div class="form-group">
+                <label>Gemini API Key (Erforderlich für KI-Funktionen)</label>
+                <input type="password" id="api-key" placeholder="AIzaSy...">
             </div>
-        </section>
+            <div class="form-group">
+                <label>Pad Farbe (Theme)</label>
+                <input type="color" id="theme-color" value="#d32f2f" onchange="changeColor()">
+            </div>
+            <button onclick="saveSettings()">Einstellungen lokal speichern</button>
+            <br><br>
+            <button style="background:red;" onclick="clearData()">Gesamtes Pad zurücksetzen</button>
+        </div>
 
-        <!-- MODUL: KI-ASSISTENT -->
-        <section id="ki" class="tab-content space-y-4">
-            <div id="chat-container" class="glass-card p-4 h-[50vh] overflow-y-auto space-y-4 flex flex-col">
-                <div class="bg-slate-800 p-3 rounded-lg max-w-[80%] self-start border border-slate-700">
-                    Hallo! Ich bin Ihr medizinischer KI-Assistent. Wie kann ich helfen?
-                </div>
-            </div>
-            
-            <div class="flex gap-2">
-                <button id="mic-btn" onclick="startSpeech()" class="bg-rose-600 p-4 rounded-xl shadow-lg active:scale-90 transition-all">
-                    <i data-lucide="mic"></i>
-                </button>
-                <input type="text" id="ki-input" class="flex-1" placeholder="Schreibe oder sprich...">
-                <button onclick="askAI()" class="bg-sky-600 p-4 rounded-xl shadow-lg">
-                    <i data-lucide="send"></i>
-                </button>
-            </div>
-        </section>
+    </div>
 
-        <!-- MODUL: VITALWERTE -->
-        <section id="vitals" class="tab-content space-y-6">
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div class="glass-card p-4">
-                    <label class="text-xs text-slate-400 uppercase">Puls (bpm)</label>
-                    <input type="number" id="v-puls" oninput="checkVitals()" class="text-3xl font-bold w-full text-center" placeholder="80">
-                </div>
-                <div class="glass-card p-4">
-                    <label class="text-xs text-slate-400 uppercase">Blutdruck (sys)</label>
-                    <input type="number" id="v-sys" oninput="checkVitals()" class="text-3xl font-bold w-full text-center" placeholder="120">
-                </div>
-                <div class="glass-card p-4">
-                    <label class="text-xs text-slate-400 uppercase">SpO2 (%)</label>
-                    <input type="number" id="v-spo2" oninput="checkVitals()" class="text-3xl font-bold w-full text-center" placeholder="98">
-                </div>
-                <div class="glass-card p-4">
-                    <label class="text-xs text-slate-400 uppercase">AF (1/min)</label>
-                    <input type="number" id="v-af" oninput="checkVitals()" class="text-3xl font-bold w-full text-center" placeholder="14">
-                </div>
-                <div class="glass-card p-4">
-                    <label class="text-xs text-slate-400 uppercase">Temp (°C)</label>
-                    <input type="number" id="v-temp" oninput="checkVitals()" class="text-3xl font-bold w-full text-center" placeholder="36.5">
-                </div>
-            </div>
-            <div id="vitals-alert" class="hidden p-4 rounded-lg bg-rose-500/20 border border-rose-500 text-rose-200">
-                ⚠️ Abweichung von den Normwerten erkannt!
-            </div>
-        </section>
-
-        <!-- MODUL: GCS RECHNER -->
-        <section id="gcs" class="tab-content space-y-6">
-            <div class="glass-card p-6">
-                <h3 class="font-bold mb-3">Augenöffnung (E)</h3>
-                <div class="grid grid-cols-2 gap-2" id="gcs-e">
-                    <button onclick="setGCS('e', 4, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Spontan (4)</button>
-                    <button onclick="setGCS('e', 3, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Auf Ansprache (3)</button>
-                    <button onclick="setGCS('e', 2, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Auf Schmerz (2)</button>
-                    <button onclick="setGCS('e', 1, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Keine (1)</button>
-                </div>
-            </div>
-            <div class="glass-card p-6">
-                <h3 class="font-bold mb-3">Verbale Antwort (V)</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-2" id="gcs-v">
-                    <button onclick="setGCS('v', 5, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Orientiert (5)</button>
-                    <button onclick="setGCS('v', 4, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Verwirrt (4)</button>
-                    <button onclick="setGCS('v', 3, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Unangemessen (3)</button>
-                    <button onclick="setGCS('v', 2, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Unverständlich (2)</button>
-                    <button onclick="setGCS('v', 1, this)" class="gcs-btn bg-slate-800 p-3 rounded border border-slate-700 text-sm">Keine (1)</button>
-                </div>
-            </div>
-            <div class="glass-card p-6 text-center">
-                <div class="text-5xl font-bold text-sky-500 mb-2" id="gcs-total">15</div>
-                <div class="text-xl" id="gcs-desc">Leicht (Normal)</div>
-            </div>
-        </section>
-
-        <!-- MODUL: SCHEMATA -->
-        <section id="schemata" class="tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="glass-card p-4 overflow-hidden group cursor-pointer" onclick="zoomImg('ABCDE')">
-                <h3 class="font-bold mb-2">ABCDE Schema</h3>
-                <div class="bg-slate-700 aspect-video rounded flex items-center justify-center text-slate-500 relative">
-                    <span class="z-10 text-white font-bold">A - B - C - D - E</span>
-                    <div class="absolute inset-0 bg-gradient-to-br from-sky-500/20 to-transparent"></div>
-                </div>
-            </div>
-            <div class="glass-card p-4 overflow-hidden group cursor-pointer" onclick="zoomImg('SAMPLER')">
-                <h3 class="font-bold mb-2">SAMPLER</h3>
-                <div class="bg-slate-700 aspect-video rounded flex items-center justify-center text-slate-500 relative">
-                    <span class="z-10 text-white font-bold">S A M P L E R</span>
-                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-transparent"></div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- JS LOGIC -->
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- KONFIGURATION ---
-        // 👉 Hier deinen Google Gemini API-Key einfügen
-        const API_KEY = AIzaSyAlTLkz4dNGmJHhzk7m9l79EREIeMHZiBY;
-        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+        // --- UHRZEIT ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toTimeString().substring(0,5);
+        }, 1000);
 
-        let gcsValues = { e: 4, v: 5, m: 6 };
-        let currentHandoverMode = 'auto';
-        let manualStep = 0;
-        let manualAnswers = [];
-
-        // --- INITIALISIERUNG ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            setInterval(() => {
-                document.getElementById('current-time').innerText = new Date().toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'});
-            }, 1000);
-            loadData();
-        });
-
-        // --- NAVIGATION ---
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
-            window.scrollTo(0,0);
+        // --- LOGIN & INITALISIERUNG ---
+        function login() {
+            const name = document.getElementById('login-name').value;
+            const veh = document.getElementById('login-veh').value;
+            if(name && veh) {
+                document.getElementById('lbl-name').innerText = name;
+                document.getElementById('lbl-veh').innerText = veh;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'flex';
+                loadLocal(); // Lädt gespeicherte Daten
+            } else {
+                alert("Bitte Name und Fahrzeug eingeben.");
+            }
         }
 
-        // --- KI FUNKTIONALITÄT ---
-        async function callGemini(prompt) {
-            if (API_KEY === "HIER_API_KEY_EINFÜGEN") {
-                alert("Bitte füge zuerst einen API-Key im Code ein!");
-                return null;
+        // --- TABS STEUERUNG ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function switchSubTab(subTabId) {
+            document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sub-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(subTabId).classList.add('active');
+        }
+
+        // --- THEME COLOR ---
+        function changeColor() {
+            const color = document.getElementById('theme-color').value;
+            document.documentElement.style.setProperty('--primary-color', color);
+        }
+
+        // --- FMS ZEITEN AUTO-FILL ---
+        function setTime(id) {
+            const el = document.getElementById(id);
+            if(!el.value) { // Nur eintragen, wenn leer. Manuelles Ändern ist möglich.
+                const now = new Date();
+                el.value = now.toTimeString().substring(0,5);
+            }
+        }
+
+        // --- XABCDE LOGIK ---
+        let xInjuries = [];
+        function addXItem() {
+            const part = document.getElementById('x-bodypart').value;
+            const detail = document.getElementById('x-detail').value;
+            if(part && detail) {
+                xInjuries.push(`${part}: ${detail}`);
+                updateXList();
+                document.getElementById('x-detail').value = '';
+            }
+        }
+        function updateXList() {
+            document.getElementById('x-list').innerHTML = xInjuries.map(i => `<div>- ${i}</div>`).join('');
+        }
+
+        function checkVitals() {
+            const sys = parseInt(document.getElementById('c-rrsys').value);
+            const puls = parseInt(document.getElementById('c-puls').value);
+            const spo2 = parseInt(document.getElementById('b-spo2').value);
+            const bfreq = parseInt(document.getElementById('b-freq').value);
+            const temp = parseFloat(document.getElementById('c-temp').value);
+
+            // Systolisch
+            const wSys = document.getElementById('warn-rrsys');
+            if(sys && sys < 100) { wSys.innerText = '! Hypotonie'; wSys.style.display = 'inline'; }
+            else if(sys && sys > 160) { wSys.innerText = '! Hypertonie'; wSys.style.display = 'inline'; }
+            else { wSys.style.display = 'none'; }
+
+            // SpO2
+            const wSpo2 = document.getElementById('warn-spo2');
+            if(spo2 && spo2 < 94) { wSpo2.innerText = '! Hypoxie'; wSpo2.style.display = 'inline'; }
+            else { wSpo2.style.display = 'none'; }
+
+            // Puls
+            const wPuls = document.getElementById('warn-puls');
+            if(puls && puls < 50) { wPuls.innerText = '! Bradykardie'; wPuls.style.display = 'inline'; }
+            else if(puls && puls > 110) { wPuls.innerText = '! Tachykardie'; wPuls.style.display = 'inline'; }
+            else { wPuls.style.display = 'none'; }
+        }
+
+        // --- GEMINI AI INTEGRATION ---
+        async function fetchGemini(prompt) {
+            const apiKey = document.getElementById('api-key').value;
+            if(!apiKey) {
+                alert("Bitte API Key in den Einstellungen hinterlegen!");
+                return "Fehler: Kein API Key.";
             }
 
             try {
-                const response = await fetch(`${API_URL}?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }]
                     })
                 });
                 const data = await response.json();
                 return data.candidates[0].content.parts[0].text;
-            } catch (error) {
-                console.error("API Fehler:", error);
-                return "Fehler bei der KI-Verbindung. Bitte Internetverbindung und API-Key prüfen.";
+            } catch(e) {
+                console.error(e);
+                return "Es gab einen Fehler bei der KI-Anfrage.";
             }
         }
 
-        async function convertToHandover() {
-            showTab('protokoll');
-            const loader = document.getElementById('handover-loading');
-            const textDiv = document.getElementById('handover-text');
+        // KI Diagnose
+        async function generateDiagnosis() {
+            document.getElementById('ai-diag-hint').value = "Analysiere Daten...";
+            const data = collectPatientData();
+            const prompt = `Du bist ein erfahrener Notfallsanitäter/Notarzt. Lese folgende Patientendaten und gib in exakt EINEM kurzen Satz EINE Verdachtsdiagnose aus. Beginne mit 'V.a. '. Daten: ${data}`;
             
-            loader.classList.remove('hidden');
-            textDiv.innerHTML = "";
+            const result = await fetchGemini(prompt);
+            document.getElementById('ai-diag-hint').value = result;
+        }
 
-            const berichtData = `
-                Patient: ${document.getElementById('p-name').value}, ${document.getElementById('p-age').value}J, ${document.getElementById('p-gender').value}
-                Ort: ${document.getElementById('e-ort').value}
-                Anamnese: ${document.getElementById('e-anamnese').value}
-                Befund: ${document.getElementById('e-befund').value}
-                Maßnahmen: ${document.getElementById('e-massnahmen').value}
+        // KI Übergabe
+        async function generateHandover() {
+            document.getElementById('uebergabe-text').value = "Generiere Übergabeprotokoll...";
+            const data = collectPatientData();
+            const prompt = `Du bist Notfallsanitäter. Erstelle aus diesen Daten eine fließende, professionelle strukturierte Übergabe für die Schockraum/Klinik-Übergabe. Schreibe es als Fließtext, nutze medizinische Fachbegriffe, halte es präzise. Daten: ${data}`;
+            
+            const result = await fetchGemini(prompt);
+            document.getElementById('uebergabe-text').value = result;
+        }
+
+        // KI Chat
+        async function sendChatMsg() {
+            const input = document.getElementById('ai-input').value;
+            if(!input) return;
+            
+            const chat = document.getElementById('ai-chat');
+            chat.innerHTML += `<div class="msg-user"><strong>Du:</strong> ${input}</div>`;
+            document.getElementById('ai-input').value = 'Denke nach...';
+
+            const prompt = `Du bist ein Assistent für den Rettungsdienst. Antworte kurz, prägnant und medizinisch korrekt auf: ${input}`;
+            const result = await fetchGemini(prompt);
+
+            chat.innerHTML += `<div class="msg-ai"><strong>KI:</strong> ${result}</div>`;
+            document.getElementById('ai-input').value = '';
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Hilfsfunktion zum Sammeln aller Formularinhalte für die KI
+        function collectPatientData() {
+            return `
+                Meldebild: ${document.getElementById('meldebild').value},
+                X: ${xInjuries.join(', ')},
+                A: ${document.getElementById('a-status').value},
+                B: Freq ${document.getElementById('b-freq').value}, SpO2 ${document.getElementById('b-spo2').value}%, Geräusche: ${document.getElementById('b-sound').value},
+                C: Puls ${document.getElementById('c-puls').value}, RR ${document.getElementById('c-rrsys').value}/${document.getElementById('c-rrdia').value}, Temp ${document.getElementById('c-temp').value},
+                D: ${document.getElementById('d-text').value},
+                E: ${document.getElementById('e-text').value},
+                Symptome: ${document.getElementById('samp-s').value}, Allergien: ${document.getElementById('samp-a').value}, Medis: ${document.getElementById('samp-m').value},
+                Vorerkrankungen: ${document.getElementById('samp-p').value}, Ereignis: ${document.getElementById('samp-e').value}
             `;
-
-            const prompt = `Du bist ein erfahrener Notfallsanitäter. Erstelle aus folgendem Einsatzbericht ein professionelles Übergabeprotokoll nach dem SBAR-Schema (Situation, Background, Assessment, Recommendation). Halte dich kurz und präzise für eine Übergabe im Schockraum:\n\n${berichtData}`;
-
-            const result = await callGemini(prompt);
-            loader.classList.add('hidden');
-            textDiv.innerHTML = result ? result.replace(/\n/g, '<br>') : "Fehler.";
-            saveData();
         }
 
-        // --- SPEECH TO TEXT ---
-        function startSpeech() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                alert("Spracherkennung wird von diesem Browser nicht unterstützt.");
-                return;
+        // --- SPEICHERN (LOCALSTORAGE & SQL VORBEREITUNG) ---
+        function saveSettings() {
+            localStorage.setItem('nida_apikey', document.getElementById('api-key').value);
+            localStorage.setItem('nida_color', document.getElementById('theme-color').value);
+            changeColor();
+            alert("Einstellungen gespeichert!");
+        }
+
+        function saveLocal() {
+            // Speichert die wichtigsten Einsatzdaten als JSON
+            const report = {
+                meldebild: document.getElementById('meldebild').value,
+                x: xInjuries,
+                b_spo2: document.getElementById('b-spo2').value,
+                c_sys: document.getElementById('c-rrsys').value,
+                samp_p: document.getElementById('samp-p').value
+                // ... hier können alle anderen Felder analog eingefügt werden
+            };
+            localStorage.setItem('nida_current_report', JSON.stringify(report));
+            alert("Einsatzbericht lokal gespeichert. Kann später aufgerufen werden.");
+        }
+
+        function loadLocal() {
+            const key = localStorage.getItem('nida_apikey');
+            if(key) document.getElementById('api-key').value = key;
+            
+            const color = localStorage.getItem('nida_color');
+            if(color) {
+                document.getElementById('theme-color').value = color;
+                changeColor();
             }
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'de-DE';
-            const btn = document.getElementById('mic-btn');
-            
-            btn.classList.add('animate-pulse', 'bg-red-500');
-            recognition.start();
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('ki-input').value = transcript;
-                btn.classList.remove('animate-pulse', 'bg-red-500');
-                askAI();
-            };
-
-            recognition.onerror = () => {
-                btn.classList.remove('animate-pulse', 'bg-red-500');
-            };
-        }
-
-        async function askAI() {
-            const input = document.getElementById('ki-input');
-            const chat = document.getElementById('chat-container');
-            if (!input.value) return;
-
-            const userMsg = input.value;
-            chat.innerHTML += `<div class="bg-sky-600 p-3 rounded-lg max-w-[80%] self-end shadow-md">${userMsg}</div>`;
-            input.value = "";
-            chat.scrollTop = chat.scrollHeight;
-
-            const response = await callGemini("Beantworte als medizinischer Assistent kurz und präzise: " + userMsg);
-            chat.innerHTML += `<div class="bg-slate-800 p-3 rounded-lg max-w-[80%] self-start border border-slate-700 shadow-md">${response}</div>`;
-            chat.scrollTop = chat.scrollHeight;
-        }
-
-        // --- GCS RECHNER ---
-        function setGCS(type, val, btn) {
-            gcsValues[type] = val;
-            const parent = btn.parentElement;
-            parent.querySelectorAll('button').forEach(b => b.classList.remove('active', 'bg-sky-600'));
-            btn.classList.add('active', 'bg-sky-600');
-            
-            const total = gcsValues.e + gcsValues.v + (gcsValues.m || 6); // m default 6 for now
-            document.getElementById('gcs-total').innerText = total;
-            
-            let desc = "Leicht (Normal)";
-            let color = "text-sky-500";
-            if (total <= 8) { desc = "Schwer (Koma-Gefahr)"; color = "text-rose-500"; }
-            else if (total <= 12) { desc = "Mittelschwer"; color = "text-amber-500"; }
-            
-            document.getElementById('gcs-desc').innerText = desc;
-            document.getElementById('gcs-desc').className = `text-xl ${color}`;
-        }
-
-        // --- VITALWERTE CHECK ---
-        function checkVitals() {
-            const puls = document.getElementById('v-puls').value;
-            const spo2 = document.getElementById('v-spo2').value;
-            const alertBox = document.getElementById('vitals-alert');
-
-            if ((puls > 0 && (puls < 50 || puls > 120)) || (spo2 > 0 && spo2 < 92)) {
-                alertBox.classList.remove('hidden');
-            } else {
-                alertBox.classList.add('hidden');
+            const reportStr = localStorage.getItem('nida_current_report');
+            if(reportStr) {
+                const report = JSON.parse(reportStr);
+                document.getElementById('meldebild').value = report.meldebild || '';
+                xInjuries = report.x || [];
+                updateXList();
+                document.getElementById('b-spo2').value = report.b_spo2 || '';
+                document.getElementById('c-rrsys').value = report.c_sys || '';
+                document.getElementById('samp-p').value = report.samp_p || '';
+                checkVitals();
             }
         }
 
-        // --- PDF EXPORT ---
-        function exportToPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const text = document.getElementById('handover-text').innerText;
-            
-            doc.setFontSize(20);
-            doc.text("RescuePad Pro - Übergabeprotokoll", 10, 20);
-            doc.setFontSize(12);
-            doc.text(`Datum: ${new Date().toLocaleString()}`, 10, 30);
-            doc.line(10, 35, 200, 35);
-            
-            const splitText = doc.splitTextToSize(text, 180);
-            doc.text(splitText, 10, 45);
-            
-            doc.save(`Rescue_Protokoll_${Date.now()}.pdf`);
-        }
-
-        // --- LOCAL STORAGE ---
-        function saveData() {
-            const data = {
-                name: document.getElementById('p-name').value,
-                age: document.getElementById('p-age').value,
-                handover: document.getElementById('handover-text').innerHTML
-            };
-            localStorage.setItem('rescue_data', JSON.stringify(data));
-        }
-
-        function loadData() {
-            const saved = localStorage.getItem('rescue_data');
-            if (saved) {
-                const data = JSON.parse(saved);
-                document.getElementById('p-name').value = data.name || "";
-                document.getElementById('p-age').value = data.age || "";
+        function clearData() {
+            if(confirm("Wirklich alles löschen?")) {
+                localStorage.clear();
+                location.reload();
             }
         }
 
-        function copyToClipboard() {
-            const text = document.getElementById('handover-text').innerText;
-            navigator.clipboard.writeText(text);
-            alert("In Zwischenablage kopiert!");
-        }
-
-        function zoomImg(title) {
-            alert(title + " Schema: Hier würde in einer echten App eine hochauflösende Grafik eingeblendet werden.");
+        // SQL Sync - Dummy Funktion (Für spätere Backend-Anbindung)
+        function syncSQL() {
+            alert("SQL Anbindung: Hier wird ein POST Request an dein PHP/NodeJS Backend gesendet.\nCode ist in der Datei als Kommentar vorbereitet!");
+            /*
+            HINWEIS FÜR SPÄTERE SQL ANBINDUNG:
+            
+            const payload = collectPatientData(); // Alternativ das JSON Objekt
+            fetch('https://dein-server.de/api/saveReport.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ data: payload })
+            }).then(res => res.json()).then(response => {
+                alert("In Datenbank gespeichert!");
+            });
+            */
         }
     </script>
 </body>
