@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NIDA-PAD Digitales Protokoll</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --nida-bg: #0f172a;
+            --nida-panel: #1e293b;
+            --nida-accent: #38bdf8;
+            --nida-orange: #f59e0b;
+            --nida-red: #ef4444;
+            --nida-green: #22c55e;
+            --nida-border: #334155;
+            --nida-text: #f1f5f9;
+            --nida-muted: #94a3b8;
+        }
+
+        body {
+            background-color: var(--nida-bg);
+            color: var(--nida-text);
+            font-family: 'Exo 2', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Scanline Effekt für medizinische Monitore */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .header {
+            background: #020617;
+            border-bottom: 2px solid var(--nida-accent);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-box {
+            background: var(--nida-orange);
+            color: black;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-family: 'Rajdhani';
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            background: var(--nida-panel);
+            border-bottom: 1px solid var(--nida-border);
+        }
+
+        .nav-item {
+            padding: 15px 5px;
+            text-align: center;
+            cursor: pointer;
+            border-right: 1px solid var(--nida-border);
+            font-family: 'Rajdhani';
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: var(--nida-muted);
+            transition: 0.2s;
+        }
+
+        .nav-item.active {
+            background: var(--nida-accent);
+            color: #000;
+        }
+
+        .content {
+            padding: 15px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--nida-panel);
+            border: 1px solid var(--nida-border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            color: var(--nida-accent);
+            font-family: 'Rajdhani';
+            font-weight: bold;
+            border-bottom: 1px solid var(--nida-border);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .grid-vitals {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .vital-box {
+            background: #0f172a;
+            border-left: 4px solid var(--nida-accent);
+            padding: 10px;
+            text-align: center;
+        }
+
+        .vital-label {
+            font-size: 10px;
+            color: var(--nida-muted);
+            text-transform: uppercase;
+        }
+
+        .vital-value {
+            font-family: 'Share Tech Mono';
+            font-size: 32px;
+            color: var(--nida-accent);
+        }
+
+        .nida-input {
+            background: #020617;
+            border: 1px solid var(--nida-border);
+            color: white;
+            padding: 8px;
+            width: 100%;
+            border-radius: 2px;
+            margin-top: 5px;
+            font-family: 'Share Tech Mono';
+        }
+
+        .btn-nida {
+            background: var(--nida-panel);
+            border: 1px solid var(--nida-accent);
+            color: var(--nida-accent);
+            padding: 10px 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            font-family: 'Rajdhani';
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-nida:active {
+            background: var(--nida-accent);
+            color: black;
+        }
+
+        .alert-bar {
+            background: var(--nida-red);
+            color: white;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 4px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .gcs-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .gcs-btn-group {
+            display: flex;
+            gap: 2px;
+        }
+
+        .gcs-btn {
+            background: #0f172a;
+            border: 1px solid var(--nida-border);
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .gcs-btn.selected {
+            background: var(--nida-orange);
+            color: black;
+            border-color: var(--nida-orange);
+        }
+
+        .badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--nida-accent);
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const DIAGNOSES = ["STEMI", "Apoplex", "Trauma", "Dyspnoe", "Sepsis", "Anaphylaxie"];
+        const MEASURES = ["O2-Gabe", "IV-Zugang", "Monitor", "12-Kanal EKG", "Intubation"];
+
+        function App() {
+            const [tab, setTab] = useState('patient');
+            const [time, setTime] = useState(new Date().toLocaleTimeString());
+            const [vitals, setVitals] = useState({ puls: '', rr: '', spo2: '', af: '' });
+            const [selectedMeasures, setSelectedMeasures] = useState([]);
+
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const toggleMeasure = (m) => {
+                setSelectedMeasures(prev => prev.includes(m) ? prev.filter(i => i !== m) : [...prev, m]);
+            };
+
+            return (
+                <div>
+                    <header className="header">
+                        <div className="brand">
+                            <div className="brand-box">NIDA</div>
+                            <div style={{fontFamily: 'Rajdhani', fontWeight: 'bold'}}>MOBILE TERMINAL</div>
+                        </div>
+                        <div style={{fontFamily: 'Share Tech Mono', color: 'var(--nida-accent)'}}>{time}</div>
+                    </header>
+
+                    <nav className="nav-grid">
+                        {['patient', 'vitals', 'gcs', 'measures', 'ai', 'finish'].map(t => (
+                            <div 
+                                key={t} 
+                                className={`nav-item ${tab === t ? 'active' : ''}`}
+                                onClick={() => setTab(t)}
+                            >
+                                {t === 'patient' ? 'PATIENT' : 
+                                 t === 'vitals' ? 'VITAL' : 
+                                 t === 'gcs' ? 'GCS/NRS' : 
+                                 t === 'measures' ? 'MASSN.' : 
+                                 t === 'ai' ? 'KI-ASSIST' : 'BERICHT'}
+                            </div>
+                        ))}
+                    </nav>
+
+                    <main className="content">
+                        {vitals.spo2 && parseInt(vitals.spo2) < 90 && (
+                            <div className="alert-bar">WARNUNG: HYPOXÄMIE ERKANNT</div>
+                        )}
+
+                        {tab === 'patient' && (
+                            <div className="card">
+                                <div className="card-title">Einsatzdaten & Patient</div>
+                                <label className="vital-label">Nachname</label>
+                                <input className="nida-input" placeholder="Name..." />
+                                <div style={{marginTop: '15px'}}></div>
+                                <label className="vital-label">Verdachtsdiagnose</label>
+                                <select className="nida-input">
+                                    <option>Bitte wählen...</option>
+                                    {DIAGNOSES.map(d => <option key={d}>{d}</option>)}
+                                </select>
+                            </div>
+                        )}
+
+                        {tab === 'vitals' && (
+                            <div className="card">
+                                <div className="card-title">Aktuelle Vitalparameter</div>
+                                <div className="grid-vitals">
+                                    <div className="vital-box">
+                                        <div className="vital-label">Puls</div>
+                                        <div className="vital-value">{vitals.puls || '--'}</div>
+                                        <input className="nida-input" type="number" onChange={e => setVitals({...vitals, puls: e.target.value})} />
+                                    </div>
+                                    <div className="vital-box">
+                                        <div className="vital-label">SpO2 %</div>
+                                        <div className="vital-value" style={{color: parseInt(vitals.spo2) < 90 ? 'var(--nida-red)' : 'var(--nida-accent)'}}>
+                                            {vitals.spo2 || '--'}
+                                        </div>
+                                        <input className="nida-input" type="number" onChange={e => setVitals({...vitals, spo2: e.target.value})} />
+                                    </div>
+                                    <div className="vital-box">
+                                        <div className="vital-label">Blutdruck</div>
+                                        <div className="vital-value" style={{fontSize: '24px'}}>{vitals.rr || '--/--'}</div>
+                                        <input className="nida-input" placeholder="120/80" onChange={e => setVitals({...vitals, rr: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'measures' && (
+                            <div className="card">
+                                <div className="card-title">Maßnahmen-Katalog</div>
+                                <div className="badge-list">
+                                    {MEASURES.map(m => (
+                                        <button 
+                                            key={m} 
+                                            className={`btn-nida ${selectedMeasures.includes(m) ? 'selected' : ''}`}
+                                            onClick={() => toggleMeasure(m)}
+                                            style={{backgroundColor: selectedMeasures.includes(m) ? 'var(--nida-accent)' : '', color: selectedMeasures.includes(m) ? 'black' : ''}}
+                                        >
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'ai' && (
+                            <div className="card">
+                                <div className="card-title">KI-Analyse (Decision Support)</div>
+                                <div style={{fontFamily: 'Share Tech Mono', fontSize: '14px', color: 'var(--nida-muted)'}}>
+                                    SYSTEM BEREIT FÜR ANALYSE...<br/><br/>
+                                    BASIEREND AUF VITALDATEN:<br/>
+                                    - STATUS: {vitals.spo2 && parseInt(vitals.spo2) < 90 ? 'KRITISCH' : 'STABIL'}<br/>
+                                    - EMPFEHLUNG: WEITERFÜHRENDES MONITORING
+                                </div>
+                                <button className="btn-nida" style={{borderColor: 'var(--nida-orange)', color: 'var(--nida-orange)'}}>
+                                    ANALYSE STARTEN
+                                </button>
+                            </div>
+                        )}
+
+                        {tab === 'finish' && (
+                            <div className="card">
+                                <div className="card-title">Protokoll-Abschluss</div>
+                                <div className="badge-list">
+                                    {selectedMeasures.map(m => <span key={m} className="badge">{m}</span>)}
+                                </div>
+                                <textarea className="nida-input" style={{height: '150px', marginTop: '15px'}} placeholder="Zusätzlicher Freitext..."></textarea>
+                                <button className="btn-nida" onClick={() => alert('Daten wurden übertragen.')}>
+                                    DATENSATZ SENDEN
+                                </button>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
