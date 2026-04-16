@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIDA-pad Pro</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --nida-red: #d32f2f;
+            --nida-bg: #121212;
+            --panel-bg: #222222;
+            --sidebar-bg: #333333;
+            --text-main: #ffffff;
+            --text-dim: #999999;
+            --border: #444444;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0; padding: 0;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* --- Header & Top Nav --- */
+        .header {
+            background-color: #000;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 2px solid var(--nida-red);
+        }
+
+        .top-nav { display: flex; gap: 20px; margin-left: 20px; }
+        .top-item {
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; color: var(--text-dim); transition: 0.2s;
+        }
+        .top-item.active { color: var(--nida-red); }
+        .top-item .icon-box {
+            width: 24px; height: 24px;
+            border: 1px solid currentColor;
+            border-radius: 4px; margin-bottom: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold;
+        }
+        .top-item span { font-size: 10px; text-transform: uppercase; }
+
+        .patient-info-top {
+            margin-left: auto;
+            text-align: right;
+            border-left: 1px solid var(--border);
+            padding-left: 20px;
+        }
+
+        /* --- Layout --- */
+        .main-container { display: flex; height: calc(100vh - 72px); }
+
+        .sidebar {
+            width: 130px;
+            background-color: var(--sidebar-bg);
+            display: flex; flex-direction: column;
+        }
+
+        .side-item {
+            padding: 15px 10px;
+            font-size: 11px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex; align-items: center;
+            position: relative;
+        }
+        .side-item.active {
+            background-color: #444;
+            color: #fff;
+        }
+        .side-item.active::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; background: var(--nida-red);
+        }
+        .side-num { color: var(--nida-red); font-weight: bold; margin-right: 8px; width: 15px; }
+
+        /* --- Content Area --- */
+        .content {
+            flex: 1;
+            background-color: var(--nida-bg);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .card-header {
+            color: var(--nida-red);
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .data-row { display: flex; gap: 20px; margin-bottom: 10px; }
+        .label { display: block; font-size: 10px; color: var(--text-dim); }
+        .val { font-size: 15px; }
+
+        .nida-input {
+            width: 100%; background: #000; border: 1px solid var(--border);
+            color: #fff; padding: 10px; margin-top: 5px;
+        }
+
+        .btn-red {
+            background: var(--nida-red); border: none; color: white;
+            padding: 10px 20px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const App = () => {
+            const [view, setView] = useState('rett'); // rett, anam, befund, etc.
+            const [topView, setTopView] = useState('main');
+
+            const sideMenu = [
+                { id: 'rett', num: 1, label: 'Rett. Daten' },
+                { id: 'anam', num: 2, label: 'Anamnese' },
+                { id: 'befund', num: 3, label: 'Erstbefund' },
+                { id: 'diag', num: 4, label: 'Diagnose' },
+                { id: 'verl', num: 5, label: 'Verlauf' },
+                { id: 'mass', num: 6, label: 'Maßnahmen' },
+                { id: 'med', num: 7, label: 'Medikamente' },
+                { id: 'uber', num: 8, label: 'Übergabe' },
+                { id: 'ergeb', num: 9, label: 'Ergebnis' }
+            ];
+
+            const renderContent = () => {
+                // Check if Top Nav is active (Info, SOP etc)
+                if(topView !== 'main') {
+                    return (
+                        <div className="card">
+                            <div className="card-header">{topView.toUpperCase()}</div>
+                            <p>Hier werden Dokumente oder Systeminformationen für {topView} angezeigt.</p>
+                            <button className="btn-red" onClick={() => setTopView('main')}>Zurück zur Doku</button>
+                        </div>
+                    );
+                }
+
+                // Sidebar Navigation Content
+                switch(view) {
+                    case 'rett': return (
+                        <>
+                            <div className="card">
+                                <div className="card-header">Patient (kein Foto)</div>
+                                <div className="data-row">
+                                    <div><span className="label">Name</span><span className="val">Müller, Alfred</span></div>
+                                    <div><span className="label">Geburtsdatum</span><span className="val">20.06.1952 (69 J)</span></div>
+                                </div>
+                                <div><span className="label">Anschrift</span><span className="val">Teichstraße 7, 32842 Berghausen</span></div>
+                            </div>
+                            <div className="card">
+                                <div className="card-header">Einsatzdaten</div>
+                                <div className="data-row">
+                                    <div><span className="label">Einsatz-Nr</span><span className="val">45895</span></div>
+                                    <div><span className="label">Status</span><span className="val">In Bearbeitung</span></div>
+                                </div>
+                            </div>
+                        </>
+                    );
+                    case 'anam': return (
+                        <div className="card">
+                            <div className="card-header">Anamnese</div>
+                            <span className="label">Hauptbeschwerde</span>
+                            <textarea className="nida-input" rows="5" placeholder="Patient gibt an..."></textarea>
+                        </div>
+                    );
+                    case 'befund': return (
+                        <div className="card">
+                            <div className="card-header">Vitalwerte / ABCDE</div>
+                            <div className="data-row">
+                                <div style={{background: '#111', padding: '10px', flex: 1, textAlign: 'center'}}>
+                                    <span className="label">HF</span><div style={{fontSize: '24px', color: 'var(--nida-red)'}}>88</div>
+                                </div>
+                                <div style={{background: '#111', padding: '10px', flex: 1, textAlign: 'center'}}>
+                                    <span className="label">SpO2</span><div style={{fontSize: '24px', color: 'var(--nida-red)'}}>96%</div>
+                                </div>
+                                <div style={{background: '#111', padding: '10px', flex: 1, textAlign: 'center'}}>
+                                    <span className="label">RR</span><div style={{fontSize: '24px', color: 'var(--nida-red)'}}>145/90</div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                    case 'mass': return (
+                        <div className="card">
+                            <div className="card-header">Maßnahmen</div>
+                            {['IV-Zugang', '12-Kanal EKG', 'O2-Gabe', 'Lagerung'].map(m => (
+                                <div key={m} style={{padding: '10px', borderBottom: '1px solid #333'}}>{m}</div>
+                            ))}
+                        </div>
+                    );
+                    default: return <div className="card"><div className="card-header">{view}</div><p>Bereich bereit zur Eingabe.</p></div>;
+                }
+            };
+
+            return (
+                <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+                    <header className="header">
+                        <div style={{width: '20px', height: '20px', background: '#fff'}}></div>
+                        <nav className="top-nav">
+                            {[
+                                { id: 'anm', label: 'Anmeldung', icon: 'A' },
+                                { id: 'info', label: 'Info', icon: 'i' },
+                                { id: 'notarzt', label: 'Notarzt', icon: 'N' },
+                                { id: 'sop', label: 'SOP', icon: 'S' },
+                                { id: 'protokoll', label: 'Protokoll', icon: 'P' }
+                            ].map(item => (
+                                <div key={item.id} className={`top-item ${topView === item.id ? 'active' : ''}`} onClick={() => setTopView(item.id)}>
+                                    <div className="icon-box">{item.icon}</div>
+                                    <span>{item.label}</span>
+                                </div>
+                            ))}
+                        </nav>
+                        <div className="patient-info-top">
+                            <div style={{fontSize: '14px', fontWeight: 'bold'}}>MÜLLER, ALFRED</div>
+                            <div style={{fontSize: '11px', color: 'var(--nida-red)'}}>Einsatz läuft: 00:42:10</div>
+                        </div>
+                    </header>
+
+                    <div className="main-container">
+                        <aside className="sidebar">
+                            {sideMenu.map(item => (
+                                <div 
+                                    key={item.id} 
+                                    className={`side-item ${view === item.id && topView === 'main' ? 'active' : ''}`}
+                                    onClick={() => { setView(item.id); setTopView('main'); }}
+                                >
+                                    <span className="side-num">{item.num}</span>
+                                    {item.label}
+                                </div>
+                            ))}
+                            <div className="side-item" style={{marginTop: 'auto', background: '#222', color: '#fff'}}>
+                                <span className="side-num">X</span> Abschluss
+                            </div>
+                        </aside>
+
+                        <main className="content">
+                            {renderContent()}
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
