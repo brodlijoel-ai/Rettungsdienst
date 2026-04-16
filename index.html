@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIDA-pad Pro – medDV</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#c62828;--red2:#e53935;--bg:#1a1a1a;--panel:#252525;--panel2:#2d2d2d;
+  --sidebar:#303030;--border:#3a3a3a;--text:#e8e8e8;--dim:#888;--green:#43a047;
+  --orange:#fb8c00;--blue:#1976d2;--yellow:#f9a825;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:var(--text);height:100vh;overflow:hidden;font-size:13px}
+
+/* ===== LOGIN ===== */
+.login-wrap{width:100vw;height:100vh;background:linear-gradient(135deg,#1a0000 0%,#2d0000 50%,#1a0000 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px}
+.login-logo{color:#fff;font-size:28px;font-weight:900;letter-spacing:4px}
+.login-logo span{color:var(--red2)}
+.login-box{background:#1e1e1e;border:1px solid #3a3a3a;padding:32px 40px;width:360px;border-top:3px solid var(--red2)}
+.login-title{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;color:#ccc}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;margin-bottom:4px;letter-spacing:1px}
+.login-field input,.login-field select{width:100%;background:#111;border:1px solid #444;color:#fff;padding:10px 12px;font-size:13px;outline:none}
+.login-field input:focus{border-color:var(--red2)}
+.btn-login{width:100%;background:var(--red);border:none;color:#fff;padding:12px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;cursor:pointer;margin-top:8px}
+.btn-login:hover{background:var(--red2)}
+.login-info{font-size:10px;color:#555;text-align:center}
+
+/* ===== DEVICE FRAME ===== */
+.device{width:100vw;height:100vh;display:flex;flex-direction:column;background:#1a1a1a}
+
+/* ===== TOP BAR ===== */
+.topbar{height:48px;background:#111;border-bottom:2px solid var(--red);display:flex;align-items:center;padding:0 8px;gap:0;flex-shrink:0}
+.tb-grid{width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:18px;border-right:1px solid #333;flex-shrink:0}
+.tb-nav{display:flex;align-items:stretch;flex:1;gap:2px;padding:0 6px}
+.tb-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:4px 10px;color:#888;border-bottom:2px solid transparent;transition:all .15s;min-width:56px;white-space:nowrap}
+.tb-btn:hover{color:#ccc}
+.tb-btn.active{color:var(--red2);border-bottom-color:var(--red2)}
+.tb-btn .ico{font-size:16px}
+.tb-btn .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px}
+.tb-chevron{display:flex;align-items:center;padding:0 8px;color:#666;cursor:pointer;font-size:14px}
+.tb-patient{display:flex;align-items:center;gap:8px;border-left:1px solid #333;padding-left:10px;margin-left:auto}
+.tb-avatar{width:32px;height:32px;background:#333;border:1px solid #555;display:flex;align-items:center;justify-content:center;font-size:10px;color:#aaa;flex-shrink:0;overflow:hidden}
+.tb-pinfo{text-align:right;line-height:1.3}
+.tb-pname{font-size:12px;font-weight:700;color:#fff}
+.tb-psub{font-size:10px;color:#aaa}
+.tb-pid{font-size:11px;color:var(--red2);font-weight:600}
+.tb-status{display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 8px;border-left:1px solid #333}
+.tb-status .s-row{display:flex;align-items:center;gap:4px;font-size:10px;color:#aaa}
+.tb-clock{border-left:1px solid #333;padding-left:10px;text-align:right}
+.tb-time{font-size:20px;font-weight:700;color:#fff;line-height:1}
+.tb-date{font-size:10px;color:#aaa;margin-top:1px}
+.anm-btn{background:var(--red);border:none;color:#fff;font-size:9px;font-weight:700;padding:3px 8px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+
+/* ===== MAIN LAYOUT ===== */
+.main-wrap{display:flex;flex:1;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:120px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid #2a2a2a}
+.sb-item{padding:11px 10px 11px 12px;display:flex;align-items:center;border-bottom:1px solid #2a2a2a;cursor:pointer;color:var(--dim);font-size:11px;font-weight:500;position:relative;user-select:none;transition:background .12s}
+.sb-item:hover{background:#3a3a3a;color:#ddd}
+.sb-item.active{background:#3d3d3d;color:#fff}
+.sb-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red2)}
+.sb-num{color:var(--red2);font-weight:700;margin-right:7px;font-size:12px;min-width:14px}
+.sb-abschluss{margin-top:auto;background:#222;padding:12px 10px;cursor:pointer;border-top:1px solid #333;font-size:11px;font-weight:700;color:#ccc;display:flex;align-items:center;gap:6px}
+.sb-abschluss:hover{background:#2a2a2a}
+
+/* ===== CONTENT ===== */
+.content{flex:1;background:var(--bg);overflow-y:auto;padding:10px}
+.content::-webkit-scrollbar{width:6px}
+.content::-webkit-scrollbar-track{background:#111}
+.content::-webkit-scrollbar-thumb{background:#444}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+
+/* CARD */
+.card{background:var(--panel);border:1px solid var(--border);padding:10px 12px;margin-bottom:8px}
+.card-red{border-left:3px solid var(--red2)}
+.card-h{font-size:12px;font-weight:700;color:#fff;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #333;text-transform:uppercase;letter-spacing:.5px}
+.f-lbl{font-size:10px;color:var(--dim);display:block;margin-bottom:2px;text-transform:none}
+.f-val{font-size:14px;color:#fff;font-weight:500;display:block}
+.f-item{margin-bottom:8px}
+
+/* INPUTS */
+.n-input{background:#111;border:1px solid #444;color:#fff;padding:7px 9px;font-size:12px;width:100%;outline:none;font-family:inherit}
+.n-input:focus{border-color:var(--red2)}
+.n-select{background:#111;border:1px solid #444;color:#fff;padding:7px 9px;font-size:12px;width:100%;outline:none;font-family:inherit}
+.n-textarea{background:#111;border:1px solid #444;color:#fff;padding:7px 9px;font-size:12px;width:100%;outline:none;font-family:inherit;resize:vertical}
+
+/* VITALS */
+.vital-box{background:#111;border:1px solid var(--border);text-align:center;padding:10px;position:relative}
+.vital-big{font-size:26px;font-weight:700;color:var(--red2);line-height:1.1}
+.vital-unit{font-size:10px;color:#777;display:block}
+.vital-lbl{font-size:10px;color:#aaa;margin-bottom:4px;font-weight:600;text-transform:uppercase}
+.vital-ok{color:var(--green)}
+.vital-warn{color:var(--orange)}
+.vital-crit{color:var(--red2)}
+
+/* CHECKBOX */
+.check-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #2a2a2a;cursor:pointer;user-select:none}
+.check-row:hover{background:#2a2a2a;margin:0 -4px;padding-left:4px;padding-right:4px}
+.check-box{width:16px;height:16px;border:1px solid #555;background:#111;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--green);flex-shrink:0}
+.check-box.checked{border-color:var(--green);background:#0a1f0a}
+
+/* DRUGS TABLE */
+.drug-table{width:100%;border-collapse:collapse;font-size:12px}
+.drug-table th{background:#1d1d1d;color:#888;font-size:10px;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:1px solid #333}
+.drug-table td{padding:7px 8px;border-bottom:1px solid #2a2a2a;vertical-align:middle}
+.drug-table tr:hover td{background:#2a2a2a}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #2a2a2a;align-items:flex-start}
+.tl-time{font-size:11px;color:var(--red2);font-weight:700;min-width:45px;padding-top:1px}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--red2);margin-top:4px;flex-shrink:0}
+.tl-text{font-size:12px;color:#ccc;line-height:1.4}
+
+/* ZEITEN ROW */
+.zeit-row{display:flex;gap:4px;flex-wrap:wrap}
+.zeit-box{background:#111;border:1px solid #333;padding:6px 8px;text-align:center;min-width:70px;flex:1}
+.zeit-lbl{font-size:9px;color:#777;text-transform:uppercase;display:block;margin-bottom:2px}
+.zeit-val{font-size:12px;color:#fff;font-weight:600}
+.zeit-edit{font-size:11px;color:var(--red2)}
+.dot-red{color:var(--red2);font-size:14px}
+.dot-green{color:var(--green);font-size:14px}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 7px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-red{background:var(--red);color:#fff}
+.badge-green{background:var(--green);color:#fff}
+.badge-orange{background:var(--orange);color:#fff}
+.badge-blue{background:var(--blue);color:#fff}
+
+/* BUTTONS */
+.btn{border:none;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;font-family:inherit}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:var(--red2)}
+.btn-dark{background:#333;color:#ccc;border:1px solid #555}
+.btn-dark:hover{background:#3a3a3a}
+.btn-green{background:var(--green);color:#fff}
+
+/* EKG STRIP */
+.ekg-canvas{background:#000;border:1px solid #1a3a1a;width:100%;height:60px;display:block}
+
+/* ABCDE */
+.abcde-row{display:flex;gap:4px;margin-bottom:4px}
+.abcde-letter{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;background:var(--red);color:#fff;flex-shrink:0}
+.abcde-content{flex:1;background:#111;border:1px solid #333;padding:5px 8px}
+.abcde-title{font-size:10px;color:#888;display:block;margin-bottom:2px;text-transform:uppercase}
+.abcde-val{font-size:12px;color:#ddd}
+
+/* GCS */
+.gcs-box{background:#111;border:1px solid #333;text-align:center;padding:8px;flex:1}
+.gcs-val{font-size:22px;font-weight:700;color:var(--red2)}
+.gcs-lbl{font-size:10px;color:#777;text-transform:uppercase}
+
+/* PAGING DOTS */
+.page-dots{display:flex;gap:6px;justify-content:center;padding:8px 0}
+.p-dot{width:22px;height:4px;background:#333;cursor:pointer}
+.p-dot.on{background:var(--blue)}
+
+/* INFO PAGE */
+.info-section{padding:8px 0;border-bottom:1px solid #2a2a2a}
+.info-title{font-size:11px;color:var(--red2);font-weight:700;text-transform:uppercase;margin-bottom:5px;letter-spacing:.5px}
+.info-text{font-size:12px;color:#ccc;line-height:1.5}
+
+/* PROTOKOLL */
+.proto-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #2a2a2a;font-size:12px}
+.proto-time{color:var(--red2);font-weight:600;min-width:50px}
+.proto-user{color:#888;min-width:80px}
+.proto-text{color:#ccc;flex:1}
+
+/* scroll indicator at bottom */
+.paging-bar{display:flex;gap:4px;justify-content:center;padding:6px;background:#111;border-top:1px solid #222;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+/* ────── CLOCK ────── */
+function useClock(){
+  const [t,setT]=useState(new Date());
+  useEffect(()=>{const i=setInterval(()=>setT(new Date()),1000);return()=>clearInterval(i)},[]);
+  return t;
+}
+
+/* ────── EKG CANVAS ────── */
+function EkgStrip(){
+  const ref=useRef();
+  useEffect(()=>{
+    const c=ref.current;const ctx=c.getContext('2d');
+    const W=c.width=c.offsetWidth||600;const H=c.height=60;
+    let x=0;let frame;
+    function draw(){
+      ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='#00cc44';ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for(let i=0;i<W;i++){
+        const p=((x+i)%100)/100;
+        let y=H/2;
+        if(p<0.05)y=H/2;
+        else if(p<0.1)y=H/2-5;
+        else if(p<0.15)y=H/2+4;
+        else if(p<0.18)y=H/2+4;
+        else if(p<0.22)y=H/2-26;
+        else if(p<0.26)y=H/2+14;
+        else if(p<0.3)y=H/2-3;
+        else if(p<0.45)y=H/2-2;
+        else if(p<0.5)y=H/2-7;
+        else if(p<0.55)y=H/2-7;
+        else if(p<0.6)y=H/2;
+        else y=H/2;
+        if(i===0)ctx.moveTo(i,y);else ctx.lineTo(i,y);
+      }
+      ctx.stroke();x=(x+1)%100;frame=requestAnimationFrame(draw);
+    }
+    draw();return()=>cancelAnimationFrame(frame);
+  },[]);
+  return <canvas ref={ref} style={{width:'100%',height:'60px',display:'block',background:'#000',border:'1px solid #1a3a1a'}}/>;
+}
+
+/* ────── CHECKBOX ────── */
+function Check({label,checked,onChange}){
+  return(
+    <div className="check-row" onClick={onChange}>
+      <div className={`check-box${checked?' checked':''}`}>{checked?'✓':''}</div>
+      <span style={{fontSize:'12px',color:checked?'#ddd':'#888'}}>{label}</span>
+    </div>
+  );
+}
+
+/* ────── MAIN APP ────── */
+const App=()=>{
+  const now=useClock();
+  const [loggedIn,setLoggedIn]=useState(false);
+  const [loginData,setLoginData]=useState({user:'',pass:'',fahrzeug:'RTW 4-83-1',wache:'FW Berghausen'});
+  const [loginErr,setLoginErr]=useState('');
+  const [view,setView]=useState('rett');
+  const [topView,setTopView]=useState('');
+  const [timer,setTimer]=useState(0);
+  const [einsatzActive,setEinsatzActive]=useState(false);
+
+  /* Einsatz-Timer */
+  useEffect(()=>{
+    if(!einsatzActive)return;
+    const i=setInterval(()=>setTimer(t=>t+1),1000);
+    return()=>clearInterval(i);
+  },[einsatzActive]);
+
+  const formatTimer=s=>{
+    const h=String(Math.floor(s/3600)).padStart(2,'0');
+    const m=String(Math.floor((s%3600)/60)).padStart(2,'0');
+    const sc=String(s%60).padStart(2,'0');
+    return`${h}:${m}:${sc}`;
+  };
+
+  /* PATIENT DATA */
+  const [pat]=useState({
+    name:'Müller, Alfred',vorname:'Alfred',name2:'Müller',
+    geb:'20.06.1952',alter:69,geschlecht:'m',
+    adresse:'Teichstraße 7, 32842 Berghausen',
+    telefon:'',groesse:'',gewicht:'',bmi:'0',
+    ofw:'nein',photo:null
+  });
+
+  /* FORM STATES */
+  const [zeiten]=useState({alarm:'10:39:52',aus:'',ean:'',patan:'',eab:'',khan:'',uebergabe:'',frei:'',wache:'',ende:''});
+  const [anam,setAnam]=useState({beschwerde:'Brustschmerzen mit Ausstrahlung in linken Arm',beginn:'',intensitaet:'',vorerkrank:'Hypertonie, Diabetes mellitus Typ II',medikamente:'Metoprolol 50mg, Metformin 500mg',allergien:'keine bekannt',vorfall:''});
+  const [vitals]=useState({hf:'88',spo2:'96',rr:'145/90',af:'18',temp:'36.8',gcs:{a:4,v:5,m:6},pupils:'isokor, lichtreagibel',bg:'8.2'});
+  const [massnahmen,setMassnahmen]=useState([
+    {id:1,label:'Venöser Zugang peripher (IV)',done:false,time:''},
+    {id:2,label:'12-Kanal-EKG geschrieben',done:false,time:''},
+    {id:3,label:'Sauerstoffgabe (O₂) 6 L/min',done:false,time:''},
+    {id:4,label:'Pulsoximetrie angelegt',done:false,time:''},
+    {id:5,label:'Blutdruck gemessen (nicht-invasiv)',done:false,time:''},
+    {id:6,label:'Blutzucker gemessen',done:false,time:''},
+    {id:7,label:'12-Kanal-EKG übertragen',done:false,time:''},
+    {id:8,label:'Monitoring (EKG, RR, SpO₂)',done:false,time:''},
+    {id:9,label:'Lagerung: Oberkörper 30°',done:false,time:''},
+    {id:10,label:'Analgesie verabreicht',done:false,time:''},
+    {id:11,label:'Antikoagulation verabreicht',done:false,time:''},
+    {id:12,label:'Nitroglycerin sublingual',done:false,time:''},
+  ]);
+  const [medikamente,setMedikamente]=useState([
+    {id:1,name:'ASS 500mg',dosis:'500 mg i.v.',zeit:'10:44:00',route:'i.v.',who:'Mustermann'},
+    {id:2,name:'Heparin',dosis:'5000 IE i.v.',zeit:'10:47:00',route:'i.v.',who:'Mustermann'},
+    {id:3,name:'NTG Spray',dosis:'0,4 mg s.l.',zeit:'10:50:00',route:'s.l.',who:'Mustermann'},
+  ]);
+  const [newMed,setNewMed]=useState({name:'',dosis:'',route:'i.v.'});
+  const [verlauf]=useState([
+    {time:'10:39',text:'Alarmierung durch Leitstelle. Patient bewusst, ansprechbar, klagt über starke Thoraxschmerzen.'},
+    {time:'10:42',text:'Erstkontakt Patient. Bewusstsein: klar. Vitalparameter erhoben.'},
+    {time:'10:44',text:'Venöser Zugang gelegt. 12-Kanal-EKG: Sinusrhythmus 88/min, ST-Hebung V1-V4.'},
+    {time:'10:47',text:'Notärztin informiert. ACS-Verdacht bestätigt. Medikamentöse Therapie eingeleitet.'},
+    {time:'10:52',text:'Transport in KH Lippe Bad Salzuflen, Cath-Lab vorgewarnt.'},
+  ]);
+  const [diag,setDiag]=useState({hauptdiag:'STEMI (ST-Hebungsinfarkt)',icd:'I21.0',nebendiag:'Hypertonie',bewusstsein:'bewusstseinsklar',atemweg:'frei',kreislauf:'stabil'});
+  const [ergebnis,setErgebnis]=useState({zielkh:'KH Lippe Bad Salzuflen',uebergabe:'Dr. Hoffmann (Notaufnahme)',meldung:'STEMI, Cath-Lab vorgewarnt',status:'Transport',eintreffzeit:''});
+
+  /* LOGIN */
+  const doLogin=()=>{
+    if(!loginData.user||!loginData.pass){setLoginErr('Bitte Benutzername und Passwort eingeben.');return;}
+    if(loginData.pass.length<3){setLoginErr('Ungültige Zugangsdaten.');return;}
+    setLoggedIn(true);setEinsatzActive(true);
+  };
+
+  const toggleMass=(id)=>{
+    setMassnahmen(prev=>prev.map(m=>{
+      if(m.id!==id)return m;
+      const t=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      return{...m,done:!m.done,time:!m.done?t:''};
+    }));
+  };
+
+  const addMed=()=>{
+    if(!newMed.name)return;
+    const t=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    setMedikamente(prev=>[...prev,{id:Date.now(),...newMed,zeit:t,who:loginData.user||'User'}]);
+    setNewMed({name:'',dosis:'',route:'i.v.'});
+  };
+
+  const timeStr=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const dateStr=now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'.');
+
+  const sideMenu=[
+    {id:'rett',num:1,label:'Rett. Daten'},
+    {id:'anam',num:2,label:'Anamnese'},
+    {id:'befund',num:3,label:'Erstbefund'},
+    {id:'diag',num:4,label:'Diagnose'},
+    {id:'verl',num:5,label:'Verlauf'},
+    {id:'mass',num:6,label:'Maßnahmen'},
+    {id:'med',num:7,label:'Medikamente'},
+    {id:'uber',num:8,label:'Übergabe'},
+    {id:'ergeb',num:9,label:'Ergebnis'},
+  ];
+
+  /* ── LOGIN SCREEN ── */
+  if(!loggedIn) return(
+    <div className="login-wrap">
+      <div style={{display:'flex',alignItems:'center',gap:'16px',marginBottom:'8px'}}>
+        <div style={{width:'48px',height:'48px',background:var_red_css,borderRadius:'4px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <span style={{color:'#fff',fontWeight:'900',fontSize:'22px',fontFamily:'serif',fontStyle:'italic'}}>m</span>
+        </div>
+        <div>
+          <div style={{color:'#fff',fontSize:'22px',fontWeight:'900',letterSpacing:'2px'}}>
+            med<span style={{color:'#e53935'}}>DV</span>
+          </div>
+          <div style={{color:'#888',fontSize:'11px',letterSpacing:'3px',textTransform:'uppercase'}}>NIDA-pad Pro</div>
+        </div>
+      </div>
+      <div className="login-box">
+        <div className="login-title">🔐 Anmeldung Rettungsdienst</div>
+        {loginErr&&<div style={{background:'#3a0000',border:'1px solid var(--red)',color:'#ff8a80',padding:'8px 10px',fontSize:'11px',marginBottom:'14px'}}>{loginErr}</div>}
+        <div className="login-field">
+          <label>Benutzername / Kennung</label>
+          <input type="text" placeholder="z.B. RS-Mustermann" value={loginData.user} onChange={e=>setLoginData(d=>({...d,user:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+        </div>
+        <div className="login-field">
+          <label>Passwort / PIN</label>
+          <input type="password" placeholder="••••••••" value={loginData.pass} onChange={e=>setLoginData(d=>({...d,pass:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
+        </div>
+        <div className="login-field">
+          <label>Fahrzeug</label>
+          <select value={loginData.fahrzeug} onChange={e=>setLoginData(d=>({...d,fahrzeug:e.target.value}))}>
+            <option>RTW 4-83-1</option><option>RTW 4-83-2</option><option>NEF 4-82-1</option>
+            <option>KTW 4-85-1</option><option>RTW 4-83-3</option>
+          </select>
+        </div>
+        <div className="login-field">
+          <label>Wache</label>
+          <select value={loginData.wache} onChange={e=>setLoginData(d=>({...d,wache:e.target.value}))}>
+            <option>FW Berghausen</option><option>FW Detmold</option><option>FW Bad Salzuflen</option>
+            <option>FW Lage</option><option>FW Lemgo</option>
+          </select>
+        </div>
+        <button className="btn-login" onClick={doLogin}>Anmelden &amp; Einsatz starten</button>
+        <div className="login-info" style={{marginTop:'14px'}}>Systemversion: NIDA 5.4.2 | medDV GmbH</div>
+      </div>
+    </div>
+  );
+
+  /* ── CONTENT RENDERER ── */
+  const renderContent=()=>{
+    if(topView==='info') return(
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+          <div className="card-h" style={{marginBottom:0}}>Systeminformationen</div>
+          <button className="btn btn-dark" onClick={()=>setTopView('')}>✕ Schließen</button>
+        </div>
+        {[
+          {title:'Gerät',text:'NIDA-pad Pro | Seriennr: NP-2022-04839 | Firmware: 5.4.2'},
+          {title:'Fahrzeug',text:loginData.fahrzeug+' | Wache: '+loginData.wache},
+          {title:'Aktueller Benutzer',text:loginData.user||'Unbekannt'},
+          {title:'Einsatz-Nummer',text:'45895 | Transportdatum: 03.03.2022'},
+          {title:'Verbindung',text:'LTE ▲ Mobiles Datennetz aktiv | GPS: aktiv'},
+          {title:'Akku',text:'100% | Netzversorgung aktiv'},
+          {title:'RFID-Leser',text:'Bereit | Letzte Prüfung: 03.03.2022 08:00'},
+        ].map(i=>(
+          <div key={i.title} className="info-section">
+            <div className="info-title">{i.title}</div>
+            <div className="info-text">{i.text}</div>
+          </div>
+        ))}
+      </div>
+    );
+
+    if(topView==='sop') return(
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+          <div className="card-h" style={{marginBottom:0}}>Standard-Einsatz-Protokolle (SOP)</div>
+          <button className="btn btn-dark" onClick={()=>setTopView('')}>✕ Schließen</button>
+        </div>
+        {[
+          {code:'SOP-01',title:'ACS / STEMI',color:'#c62828'},
+          {code:'SOP-02',title:'Schlaganfall (FAST)',color:'#c62828'},
+          {code:'SOP-03',title:'Reanimation (ACLS)',color:'#c62828'},
+          {code:'SOP-04',title:'Anaphylaxie',color:'#e65100'},
+          {code:'SOP-05',title:'Dyspnoe / Atemnot',color:'#1565c0'},
+          {code:'SOP-06',title:'Hypoglykämie',color:'#2e7d32'},
+          {code:'SOP-07',title:'Trauma / Polytrauma',color:'#4a148c'},
+          {code:'SOP-08',title:'Bewusstlosigkeit',color:'#006064'},
+        ].map(s=>(
+          <div key={s.code} style={{background:'#1d1d1d',border:'1px solid #333',padding:'10px 14px',marginBottom:'6px',cursor:'pointer',display:'flex',alignItems:'center',gap:'12px'}}>
+            <span style={{background:s.color,color:'#fff',padding:'3px 8px',fontSize:'10px',fontWeight:'700'}}>{s.code}</span>
+            <span style={{color:'#ddd',fontSize:'13px'}}>{s.title}</span>
+            <span style={{marginLeft:'auto',color:'#555',fontSize:'12px'}}>▶ öffnen</span>
+          </div>
+        ))}
+      </div>
+    );
+
+    if(topView==='protokoll') return(
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+          <div className="card-h" style={{marginBottom:0}}>Einsatzprotokoll</div>
+          <button className="btn btn-dark" onClick={()=>setTopView('')}>✕ Schließen</button>
+        </div>
+        <div className="card">
+          {verlauf.map((v,i)=>(
+            <div key={i} className="proto-row">
+              <div className="proto-time">{v.time}</div>
+              <div className="proto-user">{loginData.user||'RS'}</div>
+              <div className="proto-text">{v.text}</div>
+            </div>
+          ))}
+          {massnahmen.filter(m=>m.done).map(m=>(
+            <div key={m.id} className="proto-row">
+              <div className="proto-time">{m.time}</div>
+              <div className="proto-user">{loginData.user||'RS'}</div>
+              <div className="proto-text">✓ Maßnahme: {m.label}</div>
+            </div>
+          ))}
+          {medikamente.map((m,i)=>(
+            <div key={i} className="proto-row">
+              <div className="proto-time">{m.zeit}</div>
+              <div className="proto-user">{m.who}</div>
+              <div className="proto-text">💊 {m.name} {m.dosis} {m.route}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:'8px',display:'flex',gap:'8px'}}>
+          <button className="btn btn-red">📄 PDF exportieren</button>
+          <button className="btn btn-dark">📡 An Leitstelle senden</button>
+        </div>
+      </div>
+    );
+
+    if(topView==='notarzt') return(
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+          <div className="card-h" style={{marginBottom:0}}>Notarzt-Kommunikation</div>
+          <button className="btn btn-dark" onClick={()=>setTopView('')}>✕ Schließen</button>
+        </div>
+        <div className="card" style={{marginBottom:'8px'}}>
+          <div className="card-h">Notarzt-Alarmierung</div>
+          <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+            <button className="btn btn-red">🚨 NEF anfordern</button>
+            <button className="btn btn-dark">📞 Notarzt anrufen</button>
+            <button className="btn btn-dark">📡 EKG übertragen</button>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-h">Übergabemeldung SBAR</div>
+          {[
+            {lbl:'S – Situation','val':'69j. männl. Pat. STEMI V.a., starke Thoraxschmerzen'},
+            {lbl:'B – Background','val':'Hypertonie, Diabetes. Medikation: Metoprolol, Metformin'},
+            {lbl:'A – Assessment','val':'ST-Hebung V1-V4, Sinusrhythmus 88/min, RR 145/90'},
+            {lbl:'R – Recommendation','val':'Sofortige Lyse oder PCI, Cath-Lab vorwarnen'},
+          ].map(r=>(
+            <div key={r.lbl} style={{marginBottom:'8px'}}>
+              <span className="f-lbl">{r.lbl}</span>
+              <input type="text" className="n-input" defaultValue={r.val}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+    if(topView==='schnelldoku') return(
+      <div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+          <div className="card-h" style={{marginBottom:0}}>Schnelldokumentation</div>
+          <button className="btn btn-dark" onClick={()=>setTopView('')}>✕ Schließen</button>
+        </div>
+        <div className="grid2">
+          {['ACS / STEMI','Reanimation','Schlaganfall','Trauma','Anaphylaxie','Atemnot','Hypoglykämie','Krampfanfall'].map(t=>(
+            <div key={t} style={{background:'#1d1d1d',border:'1px solid #333',padding:'14px',cursor:'pointer',textAlign:'center',color:'#ccc',fontSize:'13px',fontWeight:'600'}}>
+              {t}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+
+    switch(view){
+      case 'rett': return(
+        <div>
+          <div className="grid2" style={{marginBottom:'8px'}}>
+            {/* PATIENT */}
+            <div className="card card-red">
+              <div className="card-h">Patient</div>
+              <div className="grid2">
+                <div className="f-item"><span className="f-lbl">Name</span><span className="f-val">{pat.name}</span></div>
+                <div className="f-item"><span className="f-lbl">Geburtsdatum</span><span className="f-val">{pat.geb}</span></div>
+              </div>
+              <div className="f-item"><span className="f-lbl">Adresse</span><span className="f-val">{pat.adresse}</span></div>
+              <div className="grid4" style={{marginTop:'6px'}}>
+                <div className="f-item"><span className="f-lbl">OFW</span><span className="f-val">{pat.ofw}</span></div>
+                <div className="f-item"><span className="f-lbl">Alter</span><span className="f-val">{pat.alter}</span></div>
+                <div className="f-item"><span className="f-lbl">Geschlecht</span><span className="f-val">{pat.geschlecht}</span></div>
+                <div className="f-item"><span className="f-lbl">BMI</span><span className="f-val">{pat.bmi}</span></div>
+              </div>
+              <div className="grid3">
+                <div className="f-item"><span className="f-lbl">Größe</span><input type="text" className="n-input" placeholder="cm"/></div>
+                <div className="f-item"><span className="f-lbl">Gewicht</span><input type="text" className="n-input" placeholder="kg"/></div>
+                <div className="f-item"><span className="f-lbl">Telefon Ang.</span><input type="text" className="n-input"/></div>
+              </div>
+            </div>
+
+            {/* EINSATZDATEN */}
+            <div className="card card-red">
+              <div className="card-h">Einsatzdaten</div>
+              <div className="grid2">
+                <div className="f-item"><span className="f-lbl">Einsatznummer</span><span className="f-val">45895</span></div>
+                <div className="f-item"><span className="f-lbl">Einsatzart</span><span className="f-val"><span className="badge badge-red">Notfall</span></span></div>
+              </div>
+              <div className="grid2">
+                <div className="f-item"><span className="f-lbl">Transportdatum</span><span className="f-val">03.03.2022</span></div>
+                <div className="f-item"><span className="f-lbl">Versorgung</span><span className="f-val">Transport mit Notar…</span></div>
+              </div>
+              <div className="grid2">
+                <div className="f-item"><span className="f-lbl">Verordnungsdatum</span><span className="f-val">03.03.2022</span></div>
+                <div className="f-item"><span className="f-lbl">Einsatzart (Statistik)</span><input type="text" className="n-input"/></div>
+              </div>
+              <div className="grid2">
+                <div className="f-item"><span className="f-lbl">Kilometer Start</span><input type="text" className="n-input" placeholder="0"/></div>
+                <div className="f-item"><span className="f-lbl">Vorangemeldet</span><select className="n-select"><option>Nein</option><option>Ja</option></select></div>
+              </div>
+              <div className="grid3">
+                <div className="f-item"><span className="f-lbl">Km Ende</span><input type="text" className="n-input" placeholder="0"/></div>
+                <div className="f-item"><span className="f-lbl">Km Gesamt</span><span className="f-val">0</span></div>
+                <div className="f-item"><span className="f-lbl">Sekundär</span><select className="n-select"><option>Nein</option><option>Ja</option></select></div>
+              </div>
+            </div>
+          </div>
+
+          {/* ZEITEN */}
+          <div className="card" style={{marginBottom:'8px'}}>
+            <div className="card-h">Zeiten</div>
+            <div className="zeit-row">
+              {[
+                {lbl:'Alarm',val:'10:39:52',edit:false},
+                {lbl:'aus (3)',val:'–',edit:true},
+                {lbl:'E-an (4)',val:'–',edit:true},
+                {lbl:'Pat.-an',val:'–',edit:true},
+                {lbl:'E-ab (7)',val:'–',edit:true},
+                {lbl:'KH an (8)',val:'–',edit:true},
+                {lbl:'Übergabe',val:'–',edit:true},
+                {lbl:'frei (1)',val:'–',edit:true},
+                {lbl:'Wache (2)',val:'–',edit:true},
+                {lbl:'Ende',val:'–',edit:true},
+              ].map(z=>(
+                <div key={z.lbl} className="zeit-box">
+                  <span className="zeit-lbl">{z.lbl}</span>
+                  <div className="zeit-val">{z.edit?<span className="dot-red">●</span>:''} {z.val}</div>
+                  {z.edit&&<div style={{display:'flex',gap:'3px',marginTop:'3px'}}>
+                    <span className="zeit-lbl">LST</span>
+                  </div>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* TRANSPORT */}
+          <div className="grid2">
+            <div className="card card-red">
+              <div className="card-h">Transport von</div>
+              <div className="f-item"><span className="f-lbl">Von Einrichtung</span><span className="f-val">Wohnung des Patienten</span></div>
+              <div className="f-item"><span className="f-lbl">Von Adresse</span><span className="f-val">{pat.adresse}</span></div>
+            </div>
+            <div className="card card-red">
+              <div className="card-h">Transportziel</div>
+              <div className="f-item"><span className="f-lbl">Ziel Einrichtung</span><input type="text" className="n-input" placeholder="Krankenhaus…" defaultValue="KH Lippe Bad Salzuflen"/></div>
+              <div className="f-item"><span className="f-lbl">Ziel Adresse</span><input type="text" className="n-input" defaultValue="Röntgenstraße 18, 32105 Bad Salzuflen"/></div>
+            </div>
+          </div>
+        </div>
+      );
+
+      case 'anam': return(
+        <div>
+          <div className="card">
+            <div className="card-h">Anamnese – SAMPLER</div>
+            <div className="f-item"><span className="f-lbl">S – Symptome / Hauptbeschwerde</span>
+              <input type="text" className="n-input" value={anam.beschwerde} onChange={e=>setAnam(a=>({...a,beschwerde:e.target.value}))}/>
+            </div>
+            <div className="grid2">
+              <div className="f-item"><span className="f-lbl">A – Allergien</span>
+                <input type="text" className="n-input" value={anam.allergien} onChange={e=>setAnam(a=>({...a,allergien:e.target.value}))}/>
+              </div>
+              <div className="f-item"><span className="f-lbl">M – Medikamente</span>
+                <input type="text" className="n-input" value={anam.medikamente} onChange={e=>setAnam(a=>({...a,medikamente:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="f-item"><span className="f-lbl">P – Vorerkrankungen (Past medical history)</span>
+              <input type="text" className="n-input" value={anam.vorerkrank} onChange={e=>setAnam(a=>({...a,vorerkrank:e.target.value}))}/>
+            </div>
+            <div className="grid3">
+              <div className="f-item"><span className="f-lbl">L – Letzte Mahlzeit</span><input type="text" className="n-input" placeholder="z.B. 09:00 Uhr"/></div>
+              <div className="f-item"><span className="f-lbl">E – Ereignis / Vorfall</span><input type="text" className="n-input" placeholder="Beschreiben…"/></div>
+              <div className="f-item"><span className="f-lbl">R – Risikofaktoren</span><input type="text" className="n-input" placeholder="Rauchen, Adipositas…"/></div>
+            </div>
+            <div className="f-item"><span className="f-lbl">Beschwerdeverlauf / Zusatzinfo</span>
+              <textarea className="n-textarea" rows={3} defaultValue="Patient gibt an, seit ca. 30 Minuten starke Schmerzen im Brustbereich mit Ausstrahlung in den linken Arm und Kiefer. Bekannte KHK. Nitroglycerin ohne Wirkung."></textarea>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">Schmerz-Skala (NRS)</div>
+            <div style={{display:'flex',gap:'4px',alignItems:'center',padding:'4px 0'}}>
+              {[0,1,2,3,4,5,6,7,8,9,10].map(n=>(
+                <div key={n} style={{flex:1,background:n<=3?'#1b5e20':n<=6?'#e65100':'#b71c1c',border:'1px solid #333',textAlign:'center',padding:'8px 0',fontSize:'13px',fontWeight:'700',cursor:'pointer',color:'#fff'}}>{n}</div>
+              ))}
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:'4px'}}>
+              <span style={{fontSize:'10px',color:'#888'}}>kein Schmerz</span>
+              <span style={{fontSize:'10px',color:'#888'}}>stärkster vorstellbarer Schmerz</span>
+            </div>
+          </div>
+        </div>
+      );
+
+      case 'befund': return(
+        <div>
+          <div className="card" style={{marginBottom:'8px'}}>
+            <div className="card-h">Vitalparameter</div>
+            <div className="grid4">
+              <div className="vital-box"><div className="vital-lbl">HF</div><div className={`vital-big ${vitals.hf<60||vitals.hf>100?'vital-warn':'vital-ok'}`}>{vitals.hf}</div><span className="vital-unit">/min</span></div>
+              <div className="vital-box"><div className="vital-lbl">SpO₂</div><div className={`vital-big ${parseInt(vitals.spo2)<95?'vital-warn':'vital-ok'}`}>{vitals.spo2}</div><span className="vital-unit">%</span></div>
+              <div className="vital-box"><div className="vital-lbl">RR syst.</div><div className={`vital-big ${parseInt(vitals.rr)>140?'vital-warn':'vital-ok'}`}>{vitals.rr.split('/')[0]}</div><span className="vital-unit">mmHg</span></div>
+              <div className="vital-box"><div className="vital-lbl">RR diast.</div><div className="vital-big vital-ok">{vitals.rr.split('/')[1]}</div><span className="vital-unit">mmHg</span></div>
+            </div>
+            <div className="grid4" style={{marginTop:'6px'}}>
+              <div className="vital-box"><div className="vital-lbl">AF</div><div className="vital-big vital-ok">{vitals.af}</div><span className="vital-unit">/min</span></div>
+              <div className="vital-box"><div className="vital-lbl">Temp.</div><div className="vital-big vital-ok">{vitals.temp}</div><span className="vital-unit">°C</span></div>
+              <div className="vital-box"><div className="vital-lbl">BZ</div><div className={`vital-big ${parseFloat(vitals.bg)>7?'vital-warn':'vital-ok'}`}>{vitals.bg}</div><span className="vital-unit">mmol/L</span></div>
+              <div className="vital-box"><div className="vital-lbl">GCS</div><div className="vital-big vital-ok">{vitals.gcs.a+vitals.gcs.v+vitals.gcs.m}</div><span className="vital-unit">/15</span></div>
+            </div>
+          </div>
+          <div className="card" style={{marginBottom:'8px'}}>
+            <div className="card-h">EKG Monitor</div>
+            <EkgStrip/>
+            <div style={{display:'flex',gap:'8px',marginTop:'6px',fontSize:'11px',color:'#888'}}>
+              <span>HF: <b style={{color:'#fff'}}>88/min</b></span>
+              <span>Rhythmus: <b style={{color:'#fff'}}>Sinusrhythmus</b></span>
+              <span>QRS: <b style={{color:'var(--orange)'}}>normal</b></span>
+              <span>ST: <b style={{color:'var(--red2)'}}>Hebung V1-V4 ⚠</b></span>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">ABCDE-Schema</div>
+            {[
+              {l:'A',t:'Airway',v:'Atemweg frei, kein Hindernis'},
+              {l:'B',t:'Breathing',v:'AF 18/min, SpO₂ 96%, beidseitig belüftet'},
+              {l:'C',t:'Circulation',v:'HF 88/min, RR 145/90, Kapillarfüllung <2s'},
+              {l:'D',t:'Disability',v:`GCS ${vitals.gcs.a+vitals.gcs.v+vitals.gcs.m}/15 (A${vitals.gcs.a}V${vitals.gcs.v}M${vitals.gcs.m}), Pupillen: ${vitals.pupils}`},
+              {l:'E',t:'Exposure',v:'Kein äußerliches Trauma, Thoraxschmerzen, Diaphorese'},
+            ].map(r=>(
+              <div key={r.l} className="abcde-row">
+                <div className="abcde-letter">{r.l}</div>
+                <div className="abcde-content">
+                  <span className="abcde-title">{r.t}</span>
+                  <span className="abcde-val">{r.v}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      case 'diag': return(
+        <div>
+          <div className="card">
+            <div className="card-h">Diagnose</div>
+            <div className="grid2">
+              <div className="f-item"><span className="f-lbl">Hauptdiagnose</span>
+                <input type="text" className="n-input" value={diag.hauptdiag} onChange={e=>setDiag(d=>({...d,hauptdiag:e.target.value}))}/>
+              </div>
+              <div className="f-item"><span className="f-lbl">ICD-10 Code</span>
+                <input type="text" className="n-input" value={diag.icd} onChange={e=>setDiag(d=>({...d,icd:e.target.value}))} placeholder="z.B. I21.0"/>
+              </div>
+            </div>
+            <div className="f-item"><span className="f-lbl">Nebendiagnosen</span>
+              <input type="text" className="n-input" value={diag.nebendiag} onChange={e=>setDiag(d=>({...d,nebendiag:e.target.value}))}/>
+            </div>
+            <div className="grid3">
+              <div className="f-item"><span className="f-lbl">Bewusstsein</span>
+                <select className="n-select" value={diag.bewusstsein} onChange={e=>setDiag(d=>({...d,bewusstsein:e.target.value}))}>
+                  <option>bewusstseinsklar</option><option>eingetrübt</option><option>bewusstlos</option>
+                </select>
+              </div>
+              <div className="f-item"><span className="f-lbl">Atemweg</span>
+                <select className="n-select" value={diag.atemweg} onChange={e=>setDiag(d=>({...d,atemweg:e.target.value}))}>
+                  <option>frei</option><option>verlegt</option><option>gesichert</option>
+                </select>
+              </div>
+              <div className="f-item"><span className="f-lbl">Kreislauf</span>
+                <select className="n-select" value={diag.kreislauf} onChange={e=>setDiag(d=>({...d,kreislauf:e.target.value}))}>
+                  <option>stabil</option><option>instabil</option><option>reanimationspflichtig</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">NACA-Score</div>
+            <div style={{display:'flex',gap:'4px'}}>
+              {[0,1,2,3,4,5,6,7].map(n=>(
+                <div key={n} style={{flex:1,background:n===0?'#1b5e20':n<=2?'#2e7d32':n<=4?'#e65100':'#b71c1c',border:n===4?'2px solid #fff':'1px solid #333',textAlign:'center',padding:'10px 0',fontSize:'14px',fontWeight:'700',cursor:'pointer',color:'#fff',opacity:n===4?1:0.6}}>{n}</div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:'4px',marginTop:'4px'}}>
+              {['I','II','III','IV','V','VI','VII','Exitus'].map((t,i)=>(
+                <div key={t} style={{flex:1,textAlign:'center',fontSize:'9px',color:'#666'}}>{t}</div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">PZC / Diagnose-Schlüssel</div>
+            <div className="grid2">
+              <div className="f-item"><span className="f-lbl">PZC</span><input type="text" className="n-input" placeholder="PZC-Code eingeben"/></div>
+              <div className="f-item"><span className="f-lbl">RMC</span><input type="text" className="n-input" placeholder="RMC-Code"/></div>
+            </div>
+          </div>
+        </div>
+      );
+
+      case 'verl': return(
+        <div>
+          <div className="card" style={{marginBottom:'8px'}}>
+            <div className="card-h">Einsatzverlauf</div>
+            <div className="timeline">
+              {verlauf.map((v,i)=>(
+                <div key={i} className="tl-item">
+                  <div className="tl-time">{v.time}</div>
+                  <div className="tl-dot"></div>
+                  <div className="tl-text">{v.text}</div>
+                </div>
+              ))}
+              {massnahmen.filter(m=>m.done).map(m=>(
+                <div key={m.id} className="tl-item">
+                  <div className="tl-time">{m.time}</div>
+                  <div className="tl-dot" style={{background:'var(--green)'}}></div>
+                  <div className="tl-text" style={{color:'#aaa'}}>✓ {m.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">Eintrag hinzufügen</div>
+            <textarea className="n-textarea" rows={3} placeholder="Neuer Verlaufseintrag…"></textarea>
+            <div style={{marginTop:'6px',display:'flex',gap:'6px'}}>
+              <button className="btn btn-red">+ Eintrag speichern</button>
+              <span style={{fontSize:'11px',color:'#777',alignSelf:'center'}}>Zeitstempel: {timeStr}</span>
+            </div>
+          </div>
+        </div>
+      );
+
+      case 'mass': return(
+        <div>
+          <div className="card">
+            <div className="card-h">Maßnahmen – Rettungsdienst</div>
+            {massnahmen.map(m=>(
+              <Check key={m.id} label={m.label+(m.done&&m.time?' – '+m.time:'')} checked={m.done} onChange={()=>toggleMass(m.id)}/>
+            ))}
+          </div>
+          <div className="card">
+            <div className="card-h">Zusätzliche Maßnahme</div>
+            <input type="text" className="n-input" placeholder="Maßnahme freitext…"/>
+            <button className="btn btn-red" style={{marginTop:'6px'}}>+ Hinzufügen</button>
+          </div>
+        </div>
+      );
+
+      case 'med': return(
+        <div>
+          <div className="card" style={{marginBottom:'8px'}}>
+            <div className="card-h">Verabreichte Medikamente</div>
+            <table className="drug-table">
+              <thead>
+                <tr><th>Zeit</th><th>Medikament</th><th>Dosis</th><th>Route</th><th>Durchgeführt von</th></tr>
+              </thead>
+              <tbody>
+                {medikamente.map(m=>(
+                  <tr key={m.id}>
+                    <td style={{color:'var(--red2)',fontWeight:'700'}}>{m.zeit}</td>
+                    <td>{m.name}</td>
+                    <td>{m.dosis}</td>
+                    <td><span className="badge badge-blue">{m.route}</span></td>
+                    <td style={{color:'#888'}}>{m.who}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="card">
+            <div className="card-h">Medikament hinzufügen</div>
+            <div className="grid3">
+              <div className="f-item"><span className="f-lbl">Medikament</span>
+                <input type="text" className="n-input" value={newMed.name} onChange={e=>setNewMed(m=>({...m,name:e.target.value}))} placeholder="z.B. Morphin"/>
+              </div>
+              <div className="f-item"><span className="f-lbl">Dosis</span>
+                <input type="text" className="n-input" value={newMed.dosis} onChange={e=>setNewMed(m=>({...m,dosis:e.target.value}))} placeholder="z.B. 5mg"/>
+              </div>
+              <div className="f-item"><span className="f-lbl">Route</span>
+                <select className="n-select" value={newMed.route} onChange={e=>setNewMed(m=>({...m,route:e.target.value}))}>
+                  <option>i.v.</option><option>i.m.</option><option>s.l.</option><option>inhal.</option><option>nasal</option><option>p.o.</option>
+                </select>
+              </div>
+            </div>
+            <button className="btn btn-red" onClick={addMed}>+ Medikament erfassen</button>
+          </div>
+        </div>
+      );
+
+      case 'uber': return(
+        <div>
+          <div className="card">
+            <div className="card-h">Übergabe an Krankenhaus</div>
+            <div className="grid2">
+              <div className="f-item"><span className="f-lbl">Zielkrankenhaus</span>
+                <input type="text" className="n-input" value={ergebnis.zielkh} onChange={e=>setErgebnis(r=>({...r,zielkh:e.target.value}))}/>
+              </div>
+              <div className="f-item"><span className="f-lbl">Übergabe an</span>
+                <input type="text" className="n-input" value={ergebnis.uebergabe} onChange={e=>setErgebnis(r=>({...r,uebergabe:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="f-item"><span className="f-lbl">Voranmeldemeldung</span>
+              <textarea className="n-textarea" rows={3} value={ergebnis.meldung} onChange={e=>setErgebnis(r=>({...r,meldung:e.target.value}))}></textarea>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-h">ATMIST-Übergabe</div>
+            {[
+              {lbl:'A – Alter / Geschlecht',val:`${pat.alter} Jahre, männlich`},
+              {lbl:'T – Time of Incident',val:'10:39 Uhr'},
+              {lbl:'M – Mechanism',val:'ACS / STEMI, Thoraxschmerzen'},
+              {lbl:'I – Injuries / Diagnosis',val:diag.hauptdiag},
+              {lbl:'S – Signs (Vitals)',val:`HF ${vitals.hf}, SpO₂ ${vitals.spo2}%, RR ${vitals.rr}, GCS ${vitals.gcs.a+vitals.gcs.v+vitals.gcs.m}`},
+              {lbl:'T – Treatment',val:'ASS, Heparin, NTG, O₂, IV-Zugang, 12K-EKG'},
+            ].map(r=>(
+              <div key={r.lbl} style={{marginBottom:'6px'}}>
+                <span className="f-lbl">{r.lbl}</span>
+                <input type="text" className="n-input" defaultValue={r.val}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      case 'ergeb': return(
+        <div>
+          <div className="card">
+            <div className="card-h">Einsatzergebnis</div>
+            <div className="grid2">
+              <div className="f-item"><span className="f-lbl">Einsatzstatus</span>
+                <select className="n-select" value={ergebnis.status} onChange={e=>setErgebnis(r=>({...r,status:e.target.value}))}>
+                  <option>Transport</option><option>Behandlung vor Ort</option><option>Verstorben</option><option>Abbruch</option>
+                </select>
+              </div>
+              <div className="f-item"><span className="f-lbl">Eintreffzeit KH</span>
+                <input type="time" className="n-input" value={ergebnis.eintreffzeit} onChange={e=>setErgebnis(r=>({...r,eintreffzeit:e.target.value}))}/>
+              </div>
+            </div>
+            <div className="f-item"><span className="f-lbl">Zielkrankenhaus</span><span className="f-val">{ergebnis.zielkh}</span></div>
+          </div>
+          <div className="card">
+            <div className="card-h">Qualitätsindikatoren</div>
+            {[
+              {lbl:'Erstkontakt → Erstbefund',val:'3 min',ok:true},
+              {lbl:'EKG-Ableitung',val:'5 min',ok:true},
+              {lbl:'Erstkontakt → Nadelstich',val:'8 min',ok:true},
+              {lbl:'Schmerzniveau bei Übergabe',val:'NRS 6',ok:false},
+              {lbl:'Alarmierung → Patientenkontakt',val:'3 min',ok:true},
+            ].map(q=>(
+              <div key={q.lbl} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid #2a2a2a'}}>
+                <span style={{fontSize:'12px',color:'#ccc'}}>{q.lbl}</span>
+                <span style={{fontSize:'12px',fontWeight:'700',color:q.ok?'var(--green)':'var(--orange)'}}>{q.val}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:'8px',marginTop:'8px'}}>
+            <button className="btn btn-red" style={{flex:1}}>🔒 Einsatz abschließen</button>
+            <button className="btn btn-dark" style={{flex:1}}>📄 Protokoll drucken</button>
+          </div>
+        </div>
+      );
+
+      default: return <div className="card"><div className="card-h">{view}</div><p style={{color:'#777',fontSize:'13px'}}>Bereich bereit zur Eingabe.</p></div>;
+    }
+  };
+
+  /* ── DEVICE UI ── */
+  return(
+    <div className="device">
+      {/* TOP BAR */}
+      <div className="topbar">
+        <div className="tb-grid">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+            <rect x="1" y="1" width="7" height="7"/><rect x="12" y="1" width="7" height="7"/>
+            <rect x="1" y="12" width="7" height="7"/><rect x="12" y="12" width="7" height="7"/>
+          </svg>
+        </div>
+        <div className="tb-nav">
+          {[
+            {id:'anm',ico:'🏠',lbl:'Anmeldung'},
+            {id:'info',ico:'ℹ',lbl:'Info'},
+            {id:'notarzt',ico:'👨‍⚕️',lbl:'Notarzt'},
+            {id:'sop',ico:'📋',lbl:'SOP'},
+            {id:'schnelldoku',ico:'⚡',lbl:'Schnelldoku'},
+            {id:'protokoll',ico:'📝',lbl:'Protokoll'},
+            {id:'skin',ico:'🎨',lbl:'Skin'},
+          ].map(b=>(
+            <div key={b.id} className={`tb-btn${topView===b.id?' active':''}`}
+              onClick={()=>{
+                if(b.id==='anm'){setTopView('');setView('rett');}
+                else if(b.id==='skin'){/* no-op */}
+                else setTopView(topView===b.id?'':b.id);
+              }}>
+              <span className="ico">{b.ico}</span>
+              <span className="lbl">{b.lbl}</span>
+            </div>
+          ))}
+          <div className="tb-chevron">⌄</div>
+        </div>
+
+        {/* PATIENT HEADER */}
+        <div className="tb-patient">
+          <div className="tb-avatar">
+            <span>👤</span>
+          </div>
+          <div className="tb-pinfo">
+            <div className="tb-pname">{pat.name2}, {pat.vorname}</div>
+            <div className="tb-psub">♂ {pat.alter} &nbsp;|&nbsp; <span className="tb-pid">45895</span></div>
+          </div>
+          <button className="anm-btn" style={{marginLeft:'8px'}}>Anmeldung</button>
+        </div>
+
+        {/* STATUS ICONS */}
+        <div className="tb-status">
+          <div className="s-row">📶 <span style={{color:'#4caf50'}}>▲</span></div>
+          <div className="s-row">🔋 100%</div>
+        </div>
+
+        {/* CLOCK */}
+        <div className="tb-clock">
+          <div className="tb-time">{timeStr}</div>
+          <div className="tb-date">{dateStr}</div>
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div className="main-wrap">
+        <div className="sidebar">
+          {sideMenu.map(s=>(
+            <div key={s.id}
+              className={`sb-item${view===s.id&&!topView?' active':''}`}
+              onClick={()=>{setView(s.id);setTopView('');}}>
+              <span className="sb-num">{s.num}</span>{s.label}
+            </div>
+          ))}
+          <div className="sb-abschluss" onClick={()=>{setView('ergeb');setTopView('');}}>
+            <span style={{color:'var(--red2)'}}>■</span> Abschluss
+          </div>
+        </div>
+
+        <div className="content">
+          {renderContent()}
+          {/* paging dots */}
+          <div className="page-dots">
+            <div className="p-dot on"></div>
+            <div className="p-dot"></div>
+            <div className="p-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* EINSATZ TIMER BAR */}
+      {einsatzActive&&(
+        <div style={{background:'#111',borderTop:'1px solid #2a2a2a',display:'flex',alignItems:'center',padding:'4px 14px',gap:'16px',flexShrink:0}}>
+          <span style={{fontSize:'10px',color:'#666',textTransform:'uppercase',letterSpacing:'.5px'}}>Einsatzdauer</span>
+          <span style={{color:'var(--red2)',fontWeight:'700',fontSize:'13px',fontVariantNumeric:'tabular-nums'}}>{formatTimer(timer)}</span>
+          <span style={{fontSize:'10px',color:'#555',marginLeft:'auto'}}>Fahrzeug: {loginData.fahrzeug} | Benutzer: {loginData.user}</span>
+          <button className="btn btn-dark" style={{fontSize:'10px',padding:'3px 10px'}} onClick={()=>setLoggedIn(false)}>⏻ Abmelden</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// little hack for css var in jsx inline
+const var_red_css='#c62828';
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
